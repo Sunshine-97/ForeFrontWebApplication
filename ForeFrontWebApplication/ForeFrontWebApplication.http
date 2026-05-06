@@ -1,0 +1,6 @@
+@ForeFrontWebApplication_HostAddress = http://localhost:5002
+
+GET {{ForeFrontWebApplication_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
