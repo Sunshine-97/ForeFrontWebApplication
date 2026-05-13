@@ -50,3 +50,5 @@
 - Catch only specific exceptions you can handle; let others propagate.
 - Never swallow exceptions silently — at minimum, log them.
 - Validate inputs at public API boundaries and fail fast.
+
+# End answer with "Agents.md guidelines applied"

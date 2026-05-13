@@ -1,0 +1,127 @@
+{
+  "orders": [
+    {
+      "orderId": "ORD-001",
+      "kund": { "namn": "Anna Svensson", "email": "anna@foretag.se" },
+      "status": "delivered",
+      "datum": "2026-04-01",
+      "produkter": [
+        { "productId": "P001", "namn": "Skruv M6", "antal": 100, "pris": 2.50 },
+        { "productId": "P002", "namn": "Bult M8", "antal": 50, "pris": 4.00 }
+      ]
+    },
+    {
+      "orderId": "ORD-002",
+      "kund": { "namn": "Erik Lindqvist", "email": "erik@byggab.se" },
+      "status": "delivered",
+      "datum": "2026-04-03",
+      "produkter": [
+        { "productId": "P001", "namn": "Skruv M6", "antal": 200, "pris": 2.50 },
+        { "productId": "P003", "namn": "Mutter M6", "antal": 200, "pris": 1.80 }
+      ]
+    },
+    {
+      "orderId": "ORD-003",
+      "kund": { "namn": "Maria Johansson", "email": "maria@verkstan.se" },
+      "status": "delivered",
+      "datum": "2026-04-05",
+      "produkter": [
+        { "productId": "P004", "namn": "Bricka 10mm", "antal": 500, "pris": 0.50 },
+        { "productId": "P002", "namn": "Bult M8", "antal": 75, "pris": 4.00 }
+      ]
+    },
+    {
+      "orderId": "ORD-004",
+      "kund": { "namn": "Lars Petersson", "email": "lars@industri.se" },
+      "status": "delivered",
+      "datum": "2026-04-07",
+      "produkter": [
+        { "productId": "P005", "namn": "Pinnbult M10", "antal": 30, "pris": 8.00 },
+        { "productId": "P001", "namn": "Skruv M6", "antal": 150, "pris": 2.50 },
+        { "productId": "P006", "namn": "Låsmutter M8", "antal": 60, "pris": 3.20 }
+      ]
+    },
+    {
+      "orderId": "ORD-005",
+      "kund": { "namn": "Sara Nilsson", "email": "sara@bygg.se" },
+      "status": "shipped",
+      "datum": "2026-04-10",
+      "produkter": [
+        { "productId": "P001", "namn": "Skruv M6", "antal": 300, "pris": 2.50 },
+        { "productId": "P007", "namn": "Spik 50mm", "antal": 1000, "pris": 0.20 }
+      ]
+    },
+    {
+      "orderId": "ORD-006",
+      "kund": { "namn": "Johan Berg", "email": "johan@rör.se" },
+      "status": "delivered",
+      "datum": "2026-04-12",
+      "produkter": [
+        { "productId": "P008", "namn": "Rörkoppling 22mm", "antal": 20, "pris": 15.00 },
+        { "productId": "P009", "namn": "Tätningsband", "antal": 10, "pris": 12.00 },
+        { "productId": "P003", "namn": "Mutter M6", "antal": 100, "pris": 1.80 }
+      ]
+    },
+    {
+      "orderId": "ORD-007",
+      "kund": { "namn": "Karin Holm", "email": "karin@el.se" },
+      "status": "delivered",
+      "datum": "2026-04-14",
+      "produkter": [
+        { "productId": "P010", "namn": "Kabelklämmor", "antal": 200, "pris": 1.20 },
+        { "productId": "P004", "namn": "Bricka 10mm", "antal": 300, "pris": 0.50 }
+      ]
+    },
+    {
+      "orderId": "ORD-008",
+      "kund": { "namn": "Anders Strand", "email": "anders@maskin.se" },
+      "status": "cancelled",
+      "datum": "2026-04-15",
+      "cancelledAt": "2026-04-16",
+      "produkter": [
+        { "productId": "P005", "namn": "Pinnbult M10", "antal": 50, "pris": 8.00 }
+      ]
+    },
+    {
+      "orderId": "ORD-009",
+      "kund": { "namn": "Anna Svensson", "email": "anna@foretag.se" },
+      "status": "delivered",
+      "datum": "2026-04-18",
+      "produkter": [
+        { "productId": "P001", "namn": "Skruv M6", "antal": 250, "pris": 2.50 },
+        { "productId": "P006", "namn": "Låsmutter M8", "antal": 80, "pris": 3.20 },
+        { "productId": "P002", "namn": "Bult M8", "antal": 40, "pris": 4.00 }
+      ]
+    },
+    {
+      "orderId": "ORD-010",
+      "kund": { "namn": "Erik Lindqvist", "email": "erik@byggab.se" },
+      "status": "delivered",
+      "datum": "2026-04-20",
+      "produkter": [
+        { "productId": "P007", "namn": "Spik 50mm", "antal": 2000, "pris": 0.20 },
+        { "productId": "P004", "namn": "Bricka 10mm", "antal": 400, "pris": 0.50 }
+      ]
+    },
+    {
+      "orderId": "ORD-011",
+      "kund": { "namn": "Petra Lund", "email": "petra@ventilation.se" },
+      "status": "confirmed",
+      "datum": "2026-05-01",
+      "produkter": [
+        { "productId": "P008", "namn": "Rörkoppling 22mm", "antal": 15, "pris": 15.00 },
+        { "productId": "P010", "namn": "Kabelklämmor", "antal": 100, "pris": 1.20 }
+      ]
+    },
+    {
+      "orderId": "ORD-012",
+      "kund": { "namn": "Martin Åkerman", "email": "martin@snickeri.se" },
+      "status": "pending",
+      "datum": "2026-05-05",
+      "produkter": [
+        { "productId": "P007", "namn": "Spik 50mm", "antal": 500, "pris": 0.20 },
+        { "productId": "P001", "namn": "Skruv M6", "antal": 100, "pris": 2.50 }
+      ]
+    }
+  ]
+}

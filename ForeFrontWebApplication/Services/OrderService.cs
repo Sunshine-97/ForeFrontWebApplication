@@ -6,7 +6,7 @@ namespace ForeFrontWebApplication.Services;
 public class OrderService : IOrderService
 {
     private static readonly OrderStatus[] StatusFlow =
-        [OrderStatus.Pending, OrderStatus.Confirmed, OrderStatus.Shipped, OrderStatus.Delivered];
+        [OrderStatus.Pending, OrderStatus.Confirmed, OrderStatus.Shipped, OrderStatus.Delivered, OrderStatus.Cancelled];
 
     private readonly ConcurrentDictionary<string, Order> _orders = new();
 
@@ -24,8 +24,8 @@ public class OrderService : IOrderService
     public Order Create(Order order)
     {
         order.OrderId = Guid.NewGuid().ToString();
-        order.Status = OrderStatus.Pending;
-        order.Datum = DateTime.UtcNow;
+        order.Status = order.Status;
+        order.Created = order.Created == default ? DateTime.UtcNow : order.Created;
         _orders[order.OrderId] = order;
         return order;
     }
@@ -34,10 +34,6 @@ public class OrderService : IOrderService
     {
         if (!_orders.TryGetValue(orderId, out var order))
             return null;
-
-        if (!IsValidTransition(order.Status, newStatus))
-            throw new InvalidOperationException(
-                $"Cannot transition from {order.Status} to {newStatus}.");
 
         order.Status = newStatus;
         return order;
@@ -48,10 +44,43 @@ public class OrderService : IOrderService
         return _orders.TryRemove(orderId, out _);
     }
 
-    private static bool IsValidTransition(OrderStatus current, OrderStatus next)
+    public IReadOnlyList<OrderVolumes> GetVolumes()
     {
-        var currentIndex = Array.IndexOf(StatusFlow, current);
-        var nextIndex = Array.IndexOf(StatusFlow, next);
-        return nextIndex == currentIndex + 1;
+        return _orders.Values
+            .Where(order => order.Status == OrderStatus.Delivered)
+            .SelectMany(val => val.Produkter)
+            .GroupBy(key => key.ProduktId)
+            .Select(val => new OrderVolumes
+            {
+                ProduktId = val.Key,
+                Namn = val.First().Namn,
+                Antal = val.Sum(p => p.Antal),
+                Pris = val.First().Pris
+            })
+            .OrderByDescending(x => x.Antal)
+            .ToList()
+            .AsReadOnly();
     }
+
+    public IReadOnlyList<OrderVolumes> GetVolumes(DateTime? from, DateTime? tom)
+    {
+        var query = _orders.Values
+            .Where(o => o.Status == OrderStatus.Delivered);
+
+        return _orders.Values
+            .Where(order => order.Status == OrderStatus.Delivered && from < order.Created && tom > order.Created)
+            .SelectMany(order => order.Produkter)
+            .GroupBy(products => products.ProduktId)
+            .Select(val => new OrderVolumes
+            {
+                ProduktId = val.Key,
+                Namn = val.First().Namn,
+                Antal = val.Sum(p => p.Antal),
+                Pris = val.First().Pris
+            })
+            .OrderByDescending(x => x.Antal)
+            .ToList()
+            .AsReadOnly();
+    }
+
 }

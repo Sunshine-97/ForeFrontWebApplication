@@ -361,3 +361,9 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/ForeFrontWebApplication/AGENTS.md
+/ForeFrontWebApplication/Instructions/SECURITY.md
+/ForeFrontWebApplication/Instructions/SECURITY_DIRECTIVES.md
+/ForeFrontWebApplication/Instructions/TESTING_SECURITY.md
+/ForeFrontWebApplication/Instructions/SECURITY-prev.txt
+/lager

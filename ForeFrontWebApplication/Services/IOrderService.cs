@@ -9,4 +9,6 @@ public interface IOrderService
     Order Create(Order order);
     Order? UpdateStatus(string orderId, OrderStatus newStatus);
     bool Delete(string orderId);
+    IReadOnlyList<OrderVolumes> GetVolumes();
+    IReadOnlyList<OrderVolumes> GetVolumes(DateTime? from, DateTime? tom);
 }
