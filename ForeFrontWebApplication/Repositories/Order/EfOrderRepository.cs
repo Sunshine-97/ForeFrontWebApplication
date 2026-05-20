@@ -17,7 +17,7 @@ public sealed class EfOrderRepository : IOrderRepository
         _db = db;
     }
 
-    public async Task<IReadOnlyList<Models.Order.Order>> GetAllAsync(CancellationToken ct = default)
+    public async Task<IReadOnlyList<OrderEntity>> GetAllAsync(CancellationToken ct = default)
     {
         return await _db.Orders
             .Include(o => o.Produkter)
@@ -25,7 +25,7 @@ public sealed class EfOrderRepository : IOrderRepository
             .ToListAsync(ct);
     }
 
-    public async Task<Models.Order.Order?> GetByIdAsync(string orderId, CancellationToken ct = default)
+    public async Task<OrderEntity?> GetByIdAsync(string orderId, CancellationToken ct = default)
     {
         return await _db.Orders
             .Include(o => o.Produkter)
@@ -33,9 +33,15 @@ public sealed class EfOrderRepository : IOrderRepository
             .FirstOrDefaultAsync(o => o.OrderId == orderId, ct);
     }
 
-    public async Task AddAsync(Models.Order.Order order, CancellationToken ct = default)
+    public async Task AddAsync(OrderEntity order, CancellationToken ct = default)
     {
         await _db.Orders.AddAsync(order, ct);
+        await _db.SaveChangesAsync(ct);
+    }
+
+    public async Task UpdateAsync(OrderEntity order, CancellationToken ct = default)
+    {
+        _db.Orders.Update(order);
         await _db.SaveChangesAsync(ct);
     }
 

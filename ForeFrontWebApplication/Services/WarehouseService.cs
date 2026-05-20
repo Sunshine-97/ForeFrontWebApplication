@@ -1,4 +1,5 @@
 using ForeFrontWebApplication.Models.Order;
+using ForeFrontWebApplication.Models.Order;
 using ForeFrontWebApplication.Models.Warehouse;
 using ForeFrontWebApplication.Repositories.Warehouse;
 
@@ -13,7 +14,6 @@ public sealed class WarehouseService : IWarehouseService
         _repository = repository;
     }
 
-    /// <inheritdoc />
     public async Task<IReadOnlyList<OrderVolumes>> GetVolumesAsync(
         DateTime? from = null,
         DateTime? to   = null,
@@ -23,18 +23,17 @@ public sealed class WarehouseService : IWarehouseService
         return AggregateProducts(orders);
     }
 
-    /// <inheritdoc />
     public async Task<IReadOnlyList<OrderVolumes>> GetTopProductsAsync(CancellationToken ct = default)
     {
         var orders = await _repository.GetDeliveredOrdersAsync(ct: ct);
         return AggregateProducts(orders).Take(10).ToList().AsReadOnly();
     }
 
-    private static IReadOnlyList<OrderVolumes> AggregateProducts(IEnumerable<Order> orders)
+    private static IReadOnlyList<OrderVolumes> AggregateProducts(IEnumerable<OrderEntity> orders)
     {
         return orders
             .SelectMany(order => order.Produkter)
-            .GroupBy(line => line.ProduktId)
+            .GroupBy(line => line.ProductId)
             .Select(group => new OrderVolumes
             {
                 ProduktId = group.Key,

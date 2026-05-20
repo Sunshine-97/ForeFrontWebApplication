@@ -1,4 +1,5 @@
 using ForeFrontWebApplication.Models.Order;
+using ForeFrontWebApplication.Models.Order;
 using ForeFrontWebApplication.Models.Warehouse;
 using ForeFrontWebApplication.Repositories.Warehouse;
 using ForeFrontWebApplication.Services;
@@ -24,7 +25,7 @@ public class WarehouseServiceTests
 
     // ?? Mocked data builders ??????????????????????????????????????????????????
 
-    private static Order FakeOrder(
+    private static OrderEntity FakeOrder(
         string           kundId,
         IList<OrderLine> produkter,
         DateTime         created,
@@ -42,7 +43,7 @@ public class WarehouseServiceTests
         {
             OrderLineId = Guid.NewGuid().ToString(),
             OrderId     = "order-placeholder",
-            ProduktId   = p.id,
+            ProductId   = p.id,
             Namn        = p.namn,
             Antal       = p.antal,
             Pris        = p.pris
@@ -51,18 +52,17 @@ public class WarehouseServiceTests
     /// <summary>
     /// Configures the repository mock to return the given orders for any date filter.
     /// </summary>
-    private void SetupDeliveredOrders(params Order[] orders) =>
+    private void SetupDeliveredOrders(params OrderEntity[] orders) =>
         _repository
-            .GetDeliveredOrdersAsync(Arg.Any<DateTime?>(), Arg.Any<DateTime?>())
-            .Returns(orders.ToList().AsReadOnly());
+            .GetDeliveredOrdersAsync(Arg.Any<DateTime?>(), Arg.Any<DateTime?>(), Arg.Any<CancellationToken>())
+            .Returns((IReadOnlyList<OrderEntity>)orders.ToList());
 
     private void SeedFromTestData() =>
         _repository
-            .GetDeliveredOrdersAsync(Arg.Any<DateTime?>(), Arg.Any<DateTime?>())
-            .Returns(TestHelper.LoadOrders()
+            .GetDeliveredOrdersAsync(Arg.Any<DateTime?>(), Arg.Any<DateTime?>(), Arg.Any<CancellationToken>())
+            .Returns((IReadOnlyList<OrderEntity>)TestHelper.LoadOrders()
                 .Where(o => o.Status == OrderStatus.Delivered)
-                .ToList()
-                .AsReadOnly());
+                .ToList());
 
     // ?? GetVolumesAsync — no date filter ?????????????????????????????????????
 
@@ -117,8 +117,8 @@ public class WarehouseServiceTests
         var from = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         var to   = new DateTime(2026, 3, 31, 0, 0, 0, DateTimeKind.Utc);
 
-        _repository.GetDeliveredOrdersAsync(from, to).Returns(
-            new List<Order>().AsReadOnly());
+        _repository.GetDeliveredOrdersAsync(from, to, Arg.Any<CancellationToken>()).Returns(
+            (IReadOnlyList<OrderEntity>)new List<OrderEntity>());
 
         await _sut.GetVolumesAsync(from, to);
 
@@ -128,8 +128,8 @@ public class WarehouseServiceTests
     [Fact]
     public async Task GetVolumes_WithDateFilter_EmptyRange_ReturnsEmpty()
     {
-        _repository.GetDeliveredOrdersAsync(Arg.Any<DateTime?>(), Arg.Any<DateTime?>())
-                   .Returns(new List<Order>().AsReadOnly());
+        _repository.GetDeliveredOrdersAsync(Arg.Any<DateTime?>(), Arg.Any<DateTime?>(), Arg.Any<CancellationToken>())
+                   .Returns((IReadOnlyList<OrderEntity>)new List<OrderEntity>());
 
         Assert.Empty(await _sut.GetVolumesAsync(DateTime.UtcNow.AddDays(-7), DateTime.UtcNow.AddDays(-1)));
     }

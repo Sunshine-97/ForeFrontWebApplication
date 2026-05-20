@@ -25,7 +25,7 @@ public sealed class OrdersController : ControllerBase
 
     [HttpGet]
     [Authorize(Roles = "Admin,Warehouse")]
-    [ProducesResponseType(typeof(IReadOnlyList<Order>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IReadOnlyList<OrderEntity>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetAll(CancellationToken ct)
@@ -36,7 +36,7 @@ public sealed class OrdersController : ControllerBase
     [HttpGet("{id}")]
     [Authorize(Roles = "Warehouse")]
     [EnableRateLimiting("ReadById")]
-    [ProducesResponseType(typeof(Order), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(OrderEntity), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
@@ -72,7 +72,7 @@ public sealed class OrdersController : ControllerBase
     [HttpPut("{id}/status")]
     [Authorize(Roles = "Warehouse")]
     [EnableRateLimiting("Mutate")]
-    [ProducesResponseType(typeof(Order), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(OrderEntity), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]

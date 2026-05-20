@@ -1,22 +1,25 @@
 using FakeItEasy;
 using ForeFrontWebApplication.DTOs.Order;
 using ForeFrontWebApplication.Models.Order;
+using ForeFrontWebApplication.Repositories.Customer;
+using ForeFrontWebApplication.Repositories.Product;
 using ForeFrontWebApplication.Repositories.Order;
 using ForeFrontWebApplication.Services;
 using NSubstitute;
-using NSubstitute.ExceptionExtensions;
 using Xunit;
 
 namespace ForeFrontWebApplication.Tests.Services;
 
 public class OrderServiceTests
 {
-    private readonly IOrderRepository _repository = Substitute.For<IOrderRepository>();
+    private readonly IOrderRepository    _repository         = Substitute.For<IOrderRepository>();
+    private readonly ICustomerRepository _customerRepository = Substitute.For<ICustomerRepository>();
+    private readonly IProductRepository  _productRepository  = Substitute.For<IProductRepository>();
     private readonly OrderService _sut;
 
     public OrderServiceTests()
     {
-        _sut = new OrderService(_repository);
+        _sut = new OrderService(_repository, _customerRepository, _productRepository);
     }
 
     // ?? Mocked data builders ??????????????????????????????????????????????????
@@ -31,7 +34,7 @@ public class OrderServiceTests
         ]
     };
 
-    private static Order BuildStoredOrder(string orderId = "order-1", OrderStatus status = OrderStatus.Pending) => new()
+    private static OrderEntity BuildStoredOrder(string orderId = "order-1", OrderStatus status = OrderStatus.Pending) => new()
     {
         OrderId   = orderId,
         KundId    = "K-001",
@@ -39,7 +42,7 @@ public class OrderServiceTests
         Created   = DateTime.UtcNow,
         Produkter =
         [
-            new OrderLine { OrderLineId = "line-1", OrderId = orderId, ProduktId = "P001", Namn = "Widget", Antal = 2, Pris = 10m }
+            new OrderLine { OrderLineId = "line-1", OrderId = orderId, ProductId = "P001", Namn = "Widget", Antal = 2, Pris = 10m }
         ]
     };
 
@@ -48,20 +51,28 @@ public class OrderServiceTests
     [Fact]
     public async Task Create_AssignsGeneratedIdAndSetsInitialStatus()
     {
+        _customerRepository.ExistsAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(true);
+        _productRepository.GetByIdAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(
+            new Models.Product.Products { ProductId = "P001", Namn = "Widget", Pris = 10m });
+
         var result = await _sut.CreateAsync(BuildRequest());
 
         Assert.NotNull(result.OrderId);
         Assert.NotEmpty(result.OrderId);
         Assert.Equal(OrderStatus.Pending, result.Status);
-        await _repository.Received(1).AddAsync(Arg.Any<Order>());
+        await _repository.Received(1).AddAsync(Arg.Any<OrderEntity>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task Create_CallsRepositoryAdd()
     {
+        _customerRepository.ExistsAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(true);
+        _productRepository.GetByIdAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(
+            new Models.Product.Products { ProductId = "P001", Namn = "Widget", Pris = 10m });
+
         await _sut.CreateAsync(BuildRequest());
 
-        await _repository.Received(1).AddAsync(Arg.Is<Order>(o =>
+        await _repository.Received(1).AddAsync(Arg.Is<OrderEntity>(o =>
             o.KundId == "K-001" &&
             o.Status == OrderStatus.Pending &&
             o.Produkter.Count == 2));
@@ -72,8 +83,8 @@ public class OrderServiceTests
     [Fact]
     public async Task GetAll_DelegatesToRepository()
     {
-        var orders = new List<Order> { BuildStoredOrder("o1"), BuildStoredOrder("o2") }.AsReadOnly();
-        _repository.GetAllAsync().Returns(orders);
+        var orders = new List<OrderEntity> { BuildStoredOrder("o1"), BuildStoredOrder("o2") }.AsReadOnly();
+        _repository.GetAllAsync(Arg.Any<CancellationToken>()).Returns(orders);
 
         var result = await _sut.GetAllAsync();
 
@@ -86,7 +97,7 @@ public class OrderServiceTests
     public async Task GetById_ExistingOrder_ReturnsOrder()
     {
         var order = BuildStoredOrder("order-1");
-        _repository.GetByIdAsync("order-1").Returns(order);
+        _repository.GetByIdAsync("order-1", Arg.Any<CancellationToken>()).Returns(order);
 
         var result = await _sut.GetByIdAsync("order-1");
 
@@ -97,18 +108,18 @@ public class OrderServiceTests
     [Fact]
     public async Task GetById_UnknownId_ReturnsNull()
     {
-        _repository.GetByIdAsync(Arg.Any<string>()).Returns((Order?)null);
+        _repository.GetByIdAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((OrderEntity?)null);
 
         Assert.Null(await _sut.GetByIdAsync("unknown"));
     }
 
-    // ?? UpdateStatus ??????????????????????????????????????????????????????????
+    // ?? UpdateStatus
 
     [Fact]
     public async Task UpdateStatus_ValidTransition_UpdatesStatus()
     {
         var order = BuildStoredOrder("order-1", OrderStatus.Pending);
-        _repository.GetByIdAsync("order-1").Returns(order);
+        _repository.GetByIdAsync("order-1", Arg.Any<CancellationToken>()).Returns(order);
 
         var result = await _sut.UpdateStatusAsync("order-1", OrderStatus.Confirmed);
 
@@ -119,7 +130,7 @@ public class OrderServiceTests
     [Fact]
     public async Task UpdateStatus_UnknownId_ReturnsNull()
     {
-        _repository.GetByIdAsync(Arg.Any<string>()).Returns((Order?)null);
+        _repository.GetByIdAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((OrderEntity?)null);
 
         Assert.Null(await _sut.UpdateStatusAsync("unknown", OrderStatus.Confirmed));
     }
@@ -128,7 +139,7 @@ public class OrderServiceTests
     public async Task UpdateStatus_FullFlow_ReachesDelivered()
     {
         var order = BuildStoredOrder("order-1", OrderStatus.Shipped);
-        _repository.GetByIdAsync("order-1").Returns(order);
+        _repository.GetByIdAsync("order-1", Arg.Any<CancellationToken>()).Returns(order);
 
         var result = await _sut.UpdateStatusAsync("order-1", OrderStatus.Delivered);
 
@@ -147,7 +158,7 @@ public class OrderServiceTests
     public async Task UpdateStatus_InvalidTransition_Throws(OrderStatus from, OrderStatus to)
     {
         var order = BuildStoredOrder("order-1", from);
-        _repository.GetByIdAsync("order-1").Returns(order);
+        _repository.GetByIdAsync("order-1", Arg.Any<CancellationToken>()).Returns(order);
 
         await Assert.ThrowsAsync<InvalidOperationException>(
             () => _sut.UpdateStatusAsync("order-1", to));
@@ -159,7 +170,7 @@ public class OrderServiceTests
     public async Task UpdateStatus_FromTerminalState_Throws(OrderStatus terminal)
     {
         var order = BuildStoredOrder("order-1", terminal);
-        _repository.GetByIdAsync("order-1").Returns(order);
+        _repository.GetByIdAsync("order-1", Arg.Any<CancellationToken>()).Returns(order);
 
         await Assert.ThrowsAsync<InvalidOperationException>(
             () => _sut.UpdateStatusAsync("order-1", OrderStatus.Pending));
@@ -172,7 +183,7 @@ public class OrderServiceTests
     public async Task UpdateStatus_CancelFromActiveState_Succeeds(OrderStatus from)
     {
         var order = BuildStoredOrder("order-1", from);
-        _repository.GetByIdAsync("order-1").Returns(order);
+        _repository.GetByIdAsync("order-1", Arg.Any<CancellationToken>()).Returns(order);
 
         var result = await _sut.UpdateStatusAsync("order-1", OrderStatus.Cancelled);
 
@@ -185,7 +196,7 @@ public class OrderServiceTests
     [Fact]
     public async Task Delete_ExistingOrder_ReturnsTrue()
     {
-        _repository.DeleteAsync("order-1").Returns(true);
+        _repository.DeleteAsync("order-1", Arg.Any<CancellationToken>()).Returns(true);
 
         Assert.True(await _sut.DeleteAsync("order-1"));
     }
@@ -193,7 +204,7 @@ public class OrderServiceTests
     [Fact]
     public async Task Delete_UnknownId_ReturnsFalse()
     {
-        _repository.DeleteAsync(Arg.Any<string>()).Returns(false);
+        _repository.DeleteAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(false);
 
         Assert.False(await _sut.DeleteAsync("unknown"));
     }

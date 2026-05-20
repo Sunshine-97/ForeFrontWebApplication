@@ -21,10 +21,6 @@ public sealed class WarehouseController : ControllerBase
         _logger           = logger;
     }
 
-    /// <summary>
-    /// Returns aggregated product volumes across all delivered orders,
-    /// optionally filtered to a date range.
-    /// </summary>
     [HttpGet("volumes")]
     [ProducesResponseType(typeof(IReadOnlyList<OrderVolumes>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -44,9 +40,6 @@ public sealed class WarehouseController : ControllerBase
         return Ok(await _warehouseService.GetVolumesAsync(from, to, ct));
     }
 
-    /// <summary>
-    /// Returns the top 10 products by total sold quantity across all delivered orders.
-    /// </summary>
     [HttpGet("top-products")]
     [ProducesResponseType(typeof(IReadOnlyList<OrderVolumes>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

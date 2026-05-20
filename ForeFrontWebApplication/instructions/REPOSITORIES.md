@@ -1,59 +1,40 @@
-# Repository Directives
+ï»¿# Repository Directives
 
-Directives for implementing the data access layer using the Repository pattern with Entity Framework Core and a PostgreSQL database running in Docker.
-
-These apply to all repositories, database context classes, entity configurations, and migrations in this codebase.
+Data access layer rules for the Repository pattern with EF Core and PostgreSQL (Docker).
 
 ---
 
 ## Architecture
 
-### Repository Pattern
-
-- **MUST** define a dedicated interface for every repository (e.g. `IOrderRepository`) in the `Repositories` folder.
-- **MUST** implement each interface in a concrete class (e.g. `OrderRepository`) in the same folder.
-- **MUST** register repositories in `Program.cs` using `AddScoped<IOrderRepository, OrderRepository>()`.
-  - Repositories are scoped because they wrap a `DbContext`, which is itself scoped.
-- **MUST NOT** inject `DbContext` directly into services or controllers. All database access goes through a repository interface.
-- **MUST NOT** put business logic in repositories. Repositories handle data access only — filtering, sorting, and aggregation that maps directly to a query are acceptable; business rules are not.
-- **SHOULD** group repositories by domain area: `Repositories/Orders/`, `Repositories/Warehouse/`, etc.
+- Define an interface and concrete class per repository (e.g. `IOrderRepository` / `OrderRepository`) under `Repositories/<Domain>/`.
+- Register as `AddScoped<IInterface, TImpl>()` in `Program.cs`.
+- Never inject `DbContext` directly into services or controllers.
+- No business logic in repositories â€” data access only.
 
 ### Folder Structure
 
 ```
-ForeFrontWebApplication/
-??? Data/
-?   ??? AppDbContext.cs
-?   ??? Configurations/
-?       ??? OrderConfiguration.cs
-?       ??? ProductConfiguration.cs
-??? Repositories/
-?   ??? Orders/
-?   ?   ??? IOrderRepository.cs
-?   ?   ??? OrderRepository.cs
-?   ??? Warehouse/
-?       ??? IWarehouseRepository.cs
-?       ??? WarehouseRepository.cs
-??? Migrations/
-    ??? (EF Core generated)
+Data/
+  AppDbContext.cs
+  Configurations/
+Repositories/
+  Orders/
+  Warehouse/
+Migrations/
 ```
 
 ---
 
-## Database — Docker + PostgreSQL
+## Docker + PostgreSQL
 
-### Docker Setup
-
-- **MUST** use a `docker-compose.yml` at the repository root to define the PostgreSQL service.
-- **MUST** use environment variables for all credentials — never hardcode passwords in `docker-compose.yml` or `appsettings.json`.
-- **MUST** use a named Docker volume to persist database data across container restarts.
-
-**Minimum `docker-compose.yml`:**
+- Define the PostgreSQL service in `docker-compose.yml` at the repo root.
+- Use environment variables for all credentials (`.env` file, git-ignored). Never hardcode.
+- Use a named volume to persist data.
 
 ```yaml
 services:
   db:
-    image: postgres:16-alpine
+    image: postgres:16
     restart: unless-stopped
     environment:
       POSTGRES_USER:     ${POSTGRES_USER}
@@ -63,66 +44,36 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-
 volumes:
   postgres_data:
 ```
 
-- Credentials are supplied via a `.env` file at the repository root (listed in `.gitignore`).
-
-### Connection String
-
-- **MUST** store the connection string in `appsettings.Development.json` for local development only.
-- **MUST** supply the production connection string via an environment variable or secrets manager — never committed to source control.
-- **MUST** use the key `ConnectionStrings:DefaultConnection` so `DbContext` registration follows the standard pattern.
-
-**`appsettings.Development.json` (local only):**
-```json
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Host=localhost;Port=5432;Database=forefront;Username=forefront_user;Password=dev-password"
-  }
-}
-```
+- Connection string in `appsettings.Development.json` (local only); production via env var/secrets manager.
+- Key: `ConnectionStrings:DefaultConnection`.
 
 ---
 
-## Entity Framework Core
+## EF Core Setup
 
-### Package Requirements
-
-Add the following packages to the project:
-
+**Packages:**
 ```
-dotnet add package Microsoft.EntityFrameworkCore --version 8.x
-dotnet add package Npgsql.EntityFrameworkCore.PostgreSQL --version 8.x
-dotnet add package Microsoft.EntityFrameworkCore.Design --version 8.x
+Microsoft.EntityFrameworkCore 8.x
+Npgsql.EntityFrameworkCore.PostgreSQL 8.x
+Microsoft.EntityFrameworkCore.Design 8.x
 ```
 
-### DbContext
-
-- **MUST** create a single `AppDbContext` class in `Data/AppDbContext.cs`.
-- **MUST** register it in `Program.cs` using `AddDbContext<AppDbContext>` with `UseNpgsql`.
-- **MUST NOT** use `AddDbContextFactory` unless explicit factory control is required.
-- **SHOULD** override `OnModelCreating` to apply all entity configurations via `modelBuilder.ApplyConfigurationsFromAssembly`.
-
-**`Data/AppDbContext.cs`:**
+**`AppDbContext`** in `Data/AppDbContext.cs`:
 ```csharp
 public sealed class AppDbContext : DbContext
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
-
-    public DbSet<Order>   Orders   { get; init; } = null!;
-    public DbSet<Product> Products { get; init; } = null!;
-
+    public DbSet<Order> Orders { get; init; } = null!;
     protected override void OnModelCreating(ModelBuilder modelBuilder)
-    {
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
-    }
+        => modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
 }
 ```
 
-**`Program.cs` registration:**
+**`Program.cs`:**
 ```csharp
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")
@@ -133,167 +84,67 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 ## Entity Configuration
 
-- **MUST** use `IEntityTypeConfiguration<T>` in a dedicated configuration class per entity — never configure entities inline in `OnModelCreating`.
-- **MUST** explicitly map table names using `builder.ToTable("orders")` (snake_case, lowercase — PostgreSQL convention).
-- **MUST** explicitly map column names using `builder.Property(x => x.OrderId).HasColumnName("order_id")`.
-- **MUST** configure all required constraints (`IsRequired`, `HasMaxLength`) in the configuration class, not only via data annotations.
-- **MUST** configure primary keys explicitly with `builder.HasKey(x => x.OrderId)`.
-- **MUST** configure all relationships (`HasOne`, `HasMany`, `WithMany`) explicitly. Do not rely on EF Core conventions for foreign keys.
-- **SHOULD** store `OrderStatus` as a `string` column using `.HasConversion<string>()` so values are human-readable in the database.
-
-**Example:**
-```csharp
-public sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
-{
-    public void Configure(EntityTypeBuilder<Order> builder)
-    {
-        builder.ToTable("orders");
-        builder.HasKey(o => o.OrderId);
-
-        builder.Property(o => o.OrderId)
-               .HasColumnName("order_id")
-               .IsRequired();
-
-        builder.Property(o => o.KundId)
-               .HasColumnName("kund_id")
-               .IsRequired();
-
-        builder.Property(o => o.Status)
-               .HasColumnName("status")
-               .HasConversion<string>()
-               .IsRequired();
-
-        builder.Property(o => o.Created)
-               .HasColumnName("created")
-               .IsRequired();
-
-        builder.HasMany(o => o.Produkter)
-               .WithOne()
-               .HasForeignKey("order_id")
-               .OnDelete(DeleteBehavior.Cascade);
-    }
-}
-```
+- One `IEntityTypeConfiguration<T>` class per entity â€” never inline in `OnModelCreating`.
+- Use snake_case table and column names (PostgreSQL convention).
+- Explicitly set primary keys, required constraints, and all relationships.
+- Store enum status columns as `string` via `.HasConversion<string>()`.
 
 ---
 
-## Repository Implementation
+## Repository Rules
 
-- **MUST** use `async`/`await` on all database calls — never use `.Result` or `.Wait()`.
-- **MUST** use `CancellationToken` on all public repository methods and pass it to every EF Core call.
-- **MUST** return domain model types from repository methods, not `IQueryable<T>` — callers should receive materialised results.
-- **MUST NOT** expose `IQueryable<T>` outside the repository. Queries are encapsulated inside the repository.
-- **MUST NOT** call `SaveChangesAsync` inside individual repository methods. Call it from the service layer or via a Unit of Work to control transaction boundaries.
-- **SHOULD** use `AsNoTracking()` on read-only queries to reduce memory overhead.
-
-**Example:**
-```csharp
-public sealed class OrderRepository : IOrderRepository
-{
-    private readonly AppDbContext _db;
-
-    public OrderRepository(AppDbContext db)
-    {
-        _db = db;
-    }
-
-    public async Task<IReadOnlyList<Order>> GetAllAsync(CancellationToken ct = default)
-    {
-        return await _db.Orders
-            .AsNoTracking()
-            .ToListAsync(ct);
-    }
-
-    public async Task<Order?> GetByIdAsync(string orderId, CancellationToken ct = default)
-    {
-        return await _db.Orders
-            .AsNoTracking()
-            .FirstOrDefaultAsync(o => o.OrderId == orderId, ct);
-    }
-
-    public async Task AddAsync(Order order, CancellationToken ct = default)
-    {
-        await _db.Orders.AddAsync(order, ct);
-    }
-
-    public Task RemoveAsync(Order order)
-    {
-        _db.Orders.Remove(order);
-        return Task.CompletedTask;
-    }
-}
-```
+- All DB calls must be `async`/`await` with `CancellationToken`.
+- Return materialised domain types â€” never expose `IQueryable<T>`.
+- Never call `SaveChangesAsync` inside a repository â€” call it from the service layer.
+- Use `AsNoTracking()` for read-only queries.
 
 ---
 
-## Model Mapping — Request ? Domain ? Database
+## Model Mapping
 
-- **MUST** map incoming DTOs to domain models in the **service layer**, never in the repository or controller.
-- **MUST** map domain models to response DTOs before returning from the service layer.
-- **MUST NOT** pass request DTOs into repositories. Repositories accept and return domain models only.
-- **MUST NOT** pass `DbContext` entity objects directly to controllers or API callers.
-
-**Flow:**
 ```
-Controller  ?  Service  ?  Repository  ?  Database
-   DTO             Domain Model              Entity/Row
-   ?                   ?
-Response DTO    maps to/from domain model
+Controller â†’ Service â†’ Repository â†’ Database
+   DTO        Domain Model           Entity
 ```
+- Map DTOs â†” domain models in the service layer only.
+- Never pass DTOs into repositories or entities to controllers.
 
 ---
 
 ## Migrations
 
-- **MUST** use EF Core Migrations for all schema changes — never write raw SQL DDL by hand.
-- **MUST** name migrations descriptively: `dotnet ef migrations add AddOrdersTable`.
-- **MUST** review the generated migration file before applying it to confirm the diff is correct.
-- **MUST** apply migrations at application startup in non-production environments using `db.Database.MigrateAsync()`, or via a separate CI/CD step in production.
-- **MUST NOT** use `EnsureCreated()` in any environment — it bypasses the migration system.
-- **MUST** commit migration files to source control.
+- Use EF Core Migrations exclusively â€” no hand-written DDL.
+- Name migrations descriptively: `dotnet ef migrations add AddOrdersTable`.
+- Apply via `MigrateAsync()` at startup (non-prod) or CI/CD step (prod).
+- Never use `EnsureCreated()`. Commit migration files to source control.
 
 ---
 
-## Transaction Handling
+## Transactions
 
-- **MUST** call `await _db.SaveChangesAsync(ct)` from the **service layer** after all repository operations for a given use case are complete.
-- For operations that span multiple repositories, **MUST** wrap them in an explicit transaction:
+- Call `SaveChangesAsync(ct)` from the service layer.
+- Wrap multi-repository operations in an explicit transaction:
 
 ```csharp
-await using var transaction = await _db.Database.BeginTransactionAsync(ct);
-try
-{
-    await _orderRepository.AddAsync(order, ct);
-    await _auditRepository.LogAsync(entry, ct);
-    await _db.SaveChangesAsync(ct);
-    await transaction.CommitAsync(ct);
-}
-catch
-{
-    await transaction.RollbackAsync(ct);
-    throw;
-}
+await using var tx = await _db.Database.BeginTransactionAsync(ct);
+try { /* repo calls + SaveChangesAsync */ await tx.CommitAsync(ct); }
+catch { await tx.RollbackAsync(ct); throw; }
 ```
 
 ---
 
 ## Security
 
-- **MUST NOT** log or expose connection strings at any log level.
-- **MUST** use parameterised queries exclusively — EF Core does this by default. Never concatenate user input into a raw SQL string.
-- **MUST NOT** use `FromSqlRaw` with user-supplied input. Use `FromSqlInterpolated` or named parameters if raw SQL is unavoidable.
-- **MUST** validate all inputs in the service layer before passing them to a repository.
-- **MUST** ensure the PostgreSQL user used by the application has the minimum required permissions (SELECT, INSERT, UPDATE, DELETE on application tables only — no DDL privileges in production).
+- Never log connection strings.
+- Use parameterised queries only (EF Core default). No `FromSqlRaw` with user input â€” use `FromSqlInterpolated`.
+- Validate inputs in the service layer before calling repositories.
+- DB user needs only SELECT/INSERT/UPDATE/DELETE â€” no DDL in production.
 
 ---
 
 ## Testing
 
-- **MUST** use a separate test database or in-memory provider for unit and integration tests — never run tests against the production or shared development database.
-- **SHOULD** use `Testcontainers.PostgreSql` to spin up a real PostgreSQL instance in integration tests so behaviour matches production.
-- **MUST** reset or recreate the database between test runs that mutate state to ensure test isolation.
-- **MUST NOT** test repository methods using only an in-memory EF provider — it does not enforce relational constraints and gives false confidence.
-
----
-
-*End of repository directives.*
+- Never test against production or shared dev databases.
+- Use `Testcontainers.PostgreSql` for integration tests.
+- Reset/recreate DB state between mutating test runs.
+- Do not rely solely on the EF in-memory provider â€” it doesn't enforce relational constraints.

@@ -1,6 +1,6 @@
 namespace ForeFrontWebApplication.Models.Order
 {
-    public class Order
+    public class OrderEntity
     {
         public string OrderId { get; set; } = Guid.NewGuid().ToString();
         public required string KundId { get; set; }

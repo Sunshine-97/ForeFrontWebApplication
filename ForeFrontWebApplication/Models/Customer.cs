@@ -1,11 +1,10 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace ForeFrontWebApplication.Models
+namespace ForeFrontWebApplication.Models.Customer
 {
-
-    public class Customer
+    public class Customers
     {
-        public required string Id { get; set; }
+        public required string CustomerId { get; set; }
 
         [Required]
         [StringLength(100, MinimumLength = 2)]

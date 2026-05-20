@@ -32,11 +32,11 @@ public class OrdersControllerTests
         };
     }
 
-    private static Order BuildOrder(string id = "order-1") => new()
+    private static OrderEntity BuildOrder(string id = "order-1") => new()
     {
         OrderId   = id,
         KundId    = "customer-1",
-        Produkter = [new OrderLine { OrderLineId = "line-1", OrderId = id, ProduktId = "p1", Namn = "Widget", Antal = 1, Pris = 50m }],
+        Produkter = [new OrderLine { OrderLineId = "line-1", OrderId = id, ProductId = "p1", Namn = "Widget", Antal = 1, Pris = 50m }],
         Status    = OrderStatus.Pending
     };
 
@@ -51,12 +51,12 @@ public class OrdersControllerTests
     [Fact]
     public async Task GetAll_ReturnsOkWithOrders()
     {
-        _service.GetAllAsync().Returns(new List<Order> { BuildOrder() }.AsReadOnly());
+        _service.GetAllAsync().Returns(new List<OrderEntity> { BuildOrder() }.AsReadOnly());
 
         var result = await _sut.GetAll(CancellationToken.None);
 
         var ok = Assert.IsType<OkObjectResult>(result);
-        Assert.Single(Assert.IsAssignableFrom<IReadOnlyList<Order>>(ok.Value));
+        Assert.Single(Assert.IsAssignableFrom<IReadOnlyList<OrderEntity>>(ok.Value));
     }
 
     // ?? GetById ???????????????????????????????????????????????????????????????
@@ -70,13 +70,13 @@ public class OrdersControllerTests
         var result = await _sut.GetById(order.OrderId, CancellationToken.None);
 
         var ok = Assert.IsType<OkObjectResult>(result);
-        Assert.Equal(order.OrderId, Assert.IsType<Order>(ok.Value).OrderId);
+        Assert.Equal(order.OrderId, Assert.IsType<OrderEntity>(ok.Value).OrderId);
     }
 
     [Fact]
     public async Task GetById_UnknownId_ReturnsNotFound()
     {
-        _service.GetByIdAsync(Arg.Any<string>()).Returns((Order?)null);
+        _service.GetByIdAsync(Arg.Any<string>()).Returns((OrderEntity?)null);
 
         Assert.IsType<NotFoundResult>(await _sut.GetById("unknown", CancellationToken.None));
     }
@@ -120,7 +120,7 @@ public class OrdersControllerTests
             CancellationToken.None);
 
         var ok = Assert.IsType<OkObjectResult>(result);
-        Assert.Equal(OrderStatus.Confirmed, Assert.IsType<Order>(ok.Value).Status);
+        Assert.Equal(OrderStatus.Confirmed, Assert.IsType<OrderEntity>(ok.Value).Status);
     }
 
     [Fact]
@@ -139,7 +139,7 @@ public class OrdersControllerTests
     public async Task UpdateStatus_UnknownId_ReturnsNotFound()
     {
         _service.UpdateStatusAsync(Arg.Any<string>(), Arg.Any<OrderStatus>())
-                .Returns((Order?)null);
+                .Returns((OrderEntity?)null);
 
         Assert.IsType<NotFoundResult>(
             await _sut.UpdateStatus("unknown",

@@ -1,7 +1,9 @@
 ﻿using System.Threading.RateLimiting;
 using System.Text;
 using ForeFrontWebApplication.Data;
+using ForeFrontWebApplication.Repositories.Customer;
 using ForeFrontWebApplication.Repositories.Order;
+using ForeFrontWebApplication.Repositories.Product;
 using ForeFrontWebApplication.Repositories.Warehouse;
 using ForeFrontWebApplication.Services;
 using ForeFrontWebApplication.Settings;
@@ -13,7 +15,7 @@ using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ?? JWT settings ?????????????????????????????????????????????????????????????
+// ?? JWT settings
 // Supply Jwt:SigningKey via environment variable or secrets manager in production.
 // Never commit a real signing key to source control.
 var jwtSettings = builder.Configuration
@@ -25,7 +27,7 @@ var jwtSettings = builder.Configuration
 builder.Services.Configure<JwtSettings>(
     builder.Configuration.GetSection(JwtSettings.SectionName));
 
-// ?? Authentication ????????????????????????????????????????????????????????????
+// ?? Authentication
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -45,28 +47,28 @@ builder.Services
         };
     });
 
-// ── Database ──────────────────────────────────────────────────────────────────
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(
         builder.Configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException(
                 "Connection string 'DefaultConnection' is missing.")));
 
-// ── Services ──────────────────────────────────────────────────────────────────
-builder.Services.AddScoped<IOrderRepository,    EfOrderRepository>();
+builder.Services.AddScoped<ICustomerRepository,  EfCustomerRepository>();
+builder.Services.AddScoped<IProductRepository,   EfProductRepository>();
+builder.Services.AddScoped<IOrderRepository,     EfOrderRepository>();
 builder.Services.AddScoped<IWarehouseRepository, EfWarehouseRepository>();
 builder.Services.AddScoped<IOrderService,        OrderService>();
 builder.Services.AddScoped<IWarehouseService,    WarehouseService>();
 builder.Services.AddSingleton<ITokenService, TokenService>();
 builder.Services.AddSingleton<IAuthService,  AuthService>();
 
-// ?? Authorization ?????????????????????????????????????????????????????????????
+// ?? Authorization 
 builder.Services.AddAuthorizationBuilder()
     .AddPolicy("Customer", policy => policy.RequireRole("Customer"))
     .AddPolicy("Warehouse", policy => policy.RequireRole("Warehouse"))
     .AddPolicy("Admin", policy => policy.RequireRole("Admin"));
 
-// ?? Rate Limiting ?????????????????????????????????????????????????????????????
+// ?? Rate Limiting 
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -88,7 +90,7 @@ builder.Services.AddRateLimiter(options =>
     });
 });
 
-// ?? MVC / API ?????????????????????????????????????????????????????????????????
+// ?? MVC / API 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
@@ -121,7 +123,6 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
-// ?? HTTP pipeline ?????????????????????????????????????????????????????????????
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -132,6 +133,26 @@ else
     app.UseHsts();
 }
 
+app.UseExceptionHandler(errorApp =>
+{
+    errorApp.Run(async context =>
+    {
+        var feature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+        if (feature?.Error is KeyNotFoundException)
+        {
+            context.Response.StatusCode  = StatusCodes.Status404NotFound;
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsJsonAsync(new { error = feature.Error.Message });
+        }
+        else if (feature?.Error is InvalidOperationException)
+        {
+            context.Response.StatusCode  = StatusCodes.Status400BadRequest;
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsJsonAsync(new { error = feature.Error.Message });
+        }
+    });
+});
+
 app.UseHttpsRedirection();
 app.UseRateLimiter();
 
@@ -141,6 +162,8 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+await DataSeeder.SeedAsync(app.Services);
 
 app.Run();
 
