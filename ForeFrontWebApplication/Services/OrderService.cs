@@ -1,86 +1,91 @@
-using System.Collections.Concurrent;
-using ForeFrontWebApplication.Models;
+using ForeFrontWebApplication.DTOs.Order;
+using ForeFrontWebApplication.Models.Order;
+using ForeFrontWebApplication.Repositories.Order;
 
-namespace ForeFrontWebApplication.Services;
-
-public class OrderService : IOrderService
+namespace ForeFrontWebApplication.Services
 {
-    private static readonly OrderStatus[] StatusFlow =
-        [OrderStatus.Pending, OrderStatus.Confirmed, OrderStatus.Shipped, OrderStatus.Delivered, OrderStatus.Cancelled];
-
-    private readonly ConcurrentDictionary<string, Order> _orders = new();
-
-    public IReadOnlyList<Order> GetAll()
+    public sealed class OrderService : IOrderService
     {
-        return _orders.Values.ToList().AsReadOnly();
-    }
+        private static readonly OrderStatus[] StatusFlow =
+            [OrderStatus.Pending, OrderStatus.Confirmed, OrderStatus.Shipped, OrderStatus.Delivered, OrderStatus.Cancelled];
 
-    public Order? GetById(string orderId)
-    {
-        _orders.TryGetValue(orderId, out var order);
-        return order;
-    }
+        private readonly IOrderRepository _repository;
 
-    public Order Create(Order order)
-    {
-        order.OrderId = Guid.NewGuid().ToString();
-        order.Status = order.Status;
-        order.Created = order.Created == default ? DateTime.UtcNow : order.Created;
-        _orders[order.OrderId] = order;
-        return order;
-    }
+        public OrderService(IOrderRepository repository)
+        {
+            _repository = repository;
+        }
 
-    public Order? UpdateStatus(string orderId, OrderStatus newStatus)
-    {
-        if (!_orders.TryGetValue(orderId, out var order))
-            return null;
+        public async Task<IReadOnlyList<Order>> GetAllAsync(CancellationToken ct = default) =>
+            await _repository.GetAllAsync(ct);
 
-        order.Status = newStatus;
-        return order;
-    }
+        public async Task<Order?> GetByIdAsync(string orderId, CancellationToken ct = default) =>
+            await _repository.GetByIdAsync(orderId, ct);
 
-    public bool Delete(string orderId)
-    {
-        return _orders.TryRemove(orderId, out _);
-    }
+        public async Task<OrderResponse> CreateAsync(OrderRequest req, CancellationToken ct = default)
+        {
+            var orderId   = Guid.NewGuid().ToString();
+            var produkter = MapToProducts(req.Produkter, orderId);
 
-    public IReadOnlyList<OrderVolumes> GetVolumes()
-    {
-        return _orders.Values
-            .Where(order => order.Status == OrderStatus.Delivered)
-            .SelectMany(val => val.Produkter)
-            .GroupBy(key => key.ProduktId)
-            .Select(val => new OrderVolumes
+            var order = new Order
             {
-                ProduktId = val.Key,
-                Namn = val.First().Namn,
-                Antal = val.Sum(p => p.Antal),
-                Pris = val.First().Pris
-            })
-            .OrderByDescending(x => x.Antal)
-            .ToList()
-            .AsReadOnly();
-    }
+                OrderId   = orderId,
+                KundId    = req.KundId,
+                Produkter = produkter,
+                Status    = OrderStatus.Pending,
+                Created   = DateTime.UtcNow
+            };
 
-    public IReadOnlyList<OrderVolumes> GetVolumes(DateTime? from, DateTime? tom)
-    {
-        var query = _orders.Values
-            .Where(o => o.Status == OrderStatus.Delivered);
+            await _repository.AddAsync(order, ct);
 
-        return _orders.Values
-            .Where(order => order.Status == OrderStatus.Delivered && from < order.Created && tom > order.Created)
-            .SelectMany(order => order.Produkter)
-            .GroupBy(products => products.ProduktId)
-            .Select(val => new OrderVolumes
+            return new OrderResponse
             {
-                ProduktId = val.Key,
-                Namn = val.First().Namn,
-                Antal = val.Sum(p => p.Antal),
-                Pris = val.First().Pris
-            })
-            .OrderByDescending(x => x.Antal)
-            .ToList()
-            .AsReadOnly();
-    }
+                OrderId = order.OrderId,
+                Status  = order.Status
+            };
+        }
 
+        public async Task<Order?> UpdateStatusAsync(string orderId, OrderStatus newStatus, CancellationToken ct = default)
+        {
+            var order = await _repository.GetByIdAsync(orderId, ct);
+            if (order is null)
+                return null;
+
+            if (!IsValidTransition(order.Status, newStatus))
+                throw new InvalidOperationException(
+                    $"Cannot transition from {order.Status} to {newStatus}.");
+
+            order.Status = newStatus;
+            return order;
+        }
+
+        public async Task<bool> DeleteAsync(string orderId, CancellationToken ct = default) =>
+            await _repository.DeleteAsync(orderId, ct);
+
+        private static bool IsValidTransition(OrderStatus current, OrderStatus next)
+        {
+            if (current == OrderStatus.Delivered || current == OrderStatus.Cancelled)
+                return false;
+
+            if (next == OrderStatus.Cancelled)
+                return true;
+
+            var currentIndex = Array.IndexOf(StatusFlow, current);
+            var nextIndex    = Array.IndexOf(StatusFlow, next);
+            return nextIndex == currentIndex + 1;
+        }
+
+        private static IList<OrderLine> MapToProducts(List<OrderItemRequest> produkter, string orderId)
+        {
+            return produkter.Select(dto => new OrderLine
+            {
+                OrderLineId = Guid.NewGuid().ToString(),
+                OrderId     = orderId,
+                ProduktId   = dto.ProduktId,
+                Namn        = $"Product {dto.ProduktId}", // Placeholder — replace with catalogue lookup
+                Antal       = dto.Antal,
+                Pris        = 10.0m                       // Placeholder — replace with catalogue lookup
+            }).ToList();
+        }
+    }
 }

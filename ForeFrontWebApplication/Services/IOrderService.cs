@@ -1,14 +1,14 @@
-using ForeFrontWebApplication.Models;
+using ForeFrontWebApplication.DTOs.Order;
+using ForeFrontWebApplication.DTOs.Order;
+using ForeFrontWebApplication.Models.Order;
 
 namespace ForeFrontWebApplication.Services;
 
 public interface IOrderService
 {
-    IReadOnlyList<Order> GetAll();
-    Order? GetById(string orderId);
-    Order Create(Order order);
-    Order? UpdateStatus(string orderId, OrderStatus newStatus);
-    bool Delete(string orderId);
-    IReadOnlyList<OrderVolumes> GetVolumes();
-    IReadOnlyList<OrderVolumes> GetVolumes(DateTime? from, DateTime? tom);
+    Task<IReadOnlyList<Order>> GetAllAsync(CancellationToken ct = default);
+    Task<Order?> GetByIdAsync(string orderId, CancellationToken ct = default);
+    Task<OrderResponse> CreateAsync(OrderRequest request, CancellationToken ct = default);
+    Task<Order?> UpdateStatusAsync(string orderId, OrderStatus newStatus, CancellationToken ct = default);
+    Task<bool> DeleteAsync(string orderId, CancellationToken ct = default);
 }

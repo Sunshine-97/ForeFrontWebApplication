@@ -1,4 +1,5 @@
-using ForeFrontWebApplication.Models;
+using ForeFrontWebApplication.DTOs.Order;
+using ForeFrontWebApplication.Models.Order;
 using ForeFrontWebApplication.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,8 +11,8 @@ namespace ForeFrontWebApplication.Controllers;
 [Route("[controller]")]
 [Consumes("application/json")]
 [Produces("application/json")]
-[Authorize(Policy = "ReadOnly")]
-public class OrdersController : ControllerBase
+[Authorize]
+public sealed class OrdersController : ControllerBase
 {
     private readonly IOrderService _orderService;
     private readonly ILogger<OrdersController> _logger;
@@ -19,30 +20,29 @@ public class OrdersController : ControllerBase
     public OrdersController(IOrderService orderService, ILogger<OrdersController> logger)
     {
         _orderService = orderService;
-        _logger = logger;
+        _logger       = logger;
     }
 
     [HttpGet]
-    [Authorize(Policy = "Admin")]
-    [Authorize(Policy = "Warehouse")]
+    [Authorize(Roles = "Admin,Warehouse")]
     [ProducesResponseType(typeof(IReadOnlyList<Order>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public IActionResult GetAll()
+    public async Task<IActionResult> GetAll(CancellationToken ct)
     {
-        return Ok(_orderService.GetAll());
+        return Ok(await _orderService.GetAllAsync(ct));
     }
 
     [HttpGet("{id}")]
-    [Authorize(Policy = "Warehouse")]
+    [Authorize(Roles = "Warehouse")]
     [EnableRateLimiting("ReadById")]
     [ProducesResponseType(typeof(Order), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
-    public IActionResult GetById(string id)
+    public async Task<IActionResult> GetById(string id, CancellationToken ct)
     {
-        var order = _orderService.GetById(id);
+        var order = await _orderService.GetByIdAsync(id, ct);
         if (order is null)
             return NotFound();
 
@@ -50,24 +50,18 @@ public class OrdersController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Policy = "Customer")]
+    [Authorize(Roles = "Customer")]
     [EnableRateLimiting("Mutate")]
-    [ProducesResponseType(typeof(Order), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(OrderResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
-    public IActionResult Create([FromBody] CreateOrderRequest request)
+    public async Task<IActionResult> Create([FromBody] OrderRequest request, CancellationToken ct)
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var order = new Order
-        {
-            Kund = request.Kund,
-            Produkter = request.Produkter
-        };
-
-        var created = _orderService.Create(order);
+        var created = await _orderService.CreateAsync(request, ct);
 
         _logger.LogInformation("Order {OrderId} created by {UserId}",
             created.OrderId, User.Identity?.Name);
@@ -76,8 +70,7 @@ public class OrdersController : ControllerBase
     }
 
     [HttpPut("{id}/status")]
-    [Authorize(Policy = "Admin")]
-    [Authorize(Policy = "Warehouse")]
+    [Authorize(Roles = "Warehouse")]
     [EnableRateLimiting("Mutate")]
     [ProducesResponseType(typeof(Order), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -85,11 +78,11 @@ public class OrdersController : ControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
-    public IActionResult UpdateStatus(string id, [FromBody] UpdateStatusRequest request)
+    public async Task<IActionResult> UpdateStatus(string id, [FromBody] UpdateStatusRequest request, CancellationToken ct)
     {
         try
         {
-            var updated = _orderService.UpdateStatus(id, request.Status);
+            var updated = await _orderService.UpdateStatusAsync(id, request.Status, ct);
             if (updated is null)
                 return NotFound();
 
@@ -105,32 +98,20 @@ public class OrdersController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [Authorize(Policy = "Admin")]
+    [Authorize(Roles = "Admin")]
     [EnableRateLimiting("Mutate")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
-    public IActionResult Delete(string id)
+    public async Task<IActionResult> Delete(string id, CancellationToken ct)
     {
-        if (!_orderService.Delete(id))
+        if (!await _orderService.DeleteAsync(id, ct))
             return NotFound();
 
         _logger.LogWarning("Order {OrderId} deleted by {UserId}", id, User.Identity?.Name);
 
         return NoContent();
     }
-
-    [HttpGet("volumes")]
-    [Authorize(Policy = "Warehouse")]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public IActionResult GetVolumes([FromQuery] DateTime? from, [FromQuery] DateTime? to)
-    {
-        if(from > to)
-            return BadRequest(new { error = "Parametern 'from' måste vara tidigare än 'to'." });
-        var volumes = _orderService.GetVolumes(from, to);
-        return Ok(volumes);
-    }
 }
-
