@@ -367,3 +367,39 @@ FodyWeavers.xsd
 /ForeFrontWebApplication/Instructions/TESTING_SECURITY.md
 /ForeFrontWebApplication/Instructions/SECURITY-prev.txt
 /lager
+
+# -----------------------------------------------------------------------
+# Sensitive / environment-specific files — NEVER commit these
+# -----------------------------------------------------------------------
+
+# Environment-specific appsettings that may hold secrets (connection
+# strings, JWT signing keys, API keys).  Use appsettings.json for
+# non-secret defaults only and supply secrets via environment variables
+# or a secrets manager (Azure Key Vault / .NET User Secrets) at runtime.
+**/appsettings.Development.json
+**/appsettings.Production.json
+**/appsettings.Staging.json
+**/appsettings.*.Local.json
+
+# .NET User Secrets store written by 'dotnet user-secrets'
+# Located at %APPDATA%\Microsoft\UserSecrets\<guid>\secrets.json
+# The project-level reference is safe to track, but the secrets file itself
+# must never be committed.
+secrets.json
+
+# Docker / container local overrides (commonly holds passwords and ports)
+docker-compose.override.yml
+docker-compose.*.yml
+docker-compose.env
+
+# Environment variable files used by Docker Compose and other tooling
+.env
+.env.*
+!.env.example
+
+# Docker secret files - never commit real values
+ForeFrontWebApplication/secrets/
+secrets/
+
+# Docker env file
+ForeFrontWebApplication/docker-compose.env

@@ -5,6 +5,7 @@ namespace ForeFrontWebApplication.DTOs.Order
     public class OrderRequest
     {
         [Required]
+        [StringLength(100)]
         public string KundId { get; set; } = string.Empty;
 
         [Required]

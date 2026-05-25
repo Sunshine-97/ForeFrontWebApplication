@@ -25,6 +25,7 @@ public sealed class OrdersController : ControllerBase
 
     [HttpGet]
     [Authorize(Roles = "Admin,Warehouse")]
+    [EnableRateLimiting("ReadById")]
     [ProducesResponseType(typeof(IReadOnlyList<OrderEntity>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -34,7 +35,7 @@ public sealed class OrdersController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    [Authorize(Roles = "Warehouse")]
+    [Authorize(Roles = "Admin,Warehouse")]
     [EnableRateLimiting("ReadById")]
     [ProducesResponseType(typeof(OrderEntity), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -50,7 +51,7 @@ public sealed class OrdersController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "Customer")]
+    [Authorize(Roles = "Admin,Customer")]
     [EnableRateLimiting("Mutate")]
     [ProducesResponseType(typeof(OrderResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -70,7 +71,7 @@ public sealed class OrdersController : ControllerBase
     }
 
     [HttpPut("{id}/status")]
-    [Authorize(Roles = "Warehouse")]
+    [Authorize(Roles = "Admin,Warehouse")]
     [EnableRateLimiting("Mutate")]
     [ProducesResponseType(typeof(OrderEntity), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -80,6 +81,12 @@ public sealed class OrdersController : ControllerBase
     [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> UpdateStatus(string id, [FromBody] UpdateStatusRequest request, CancellationToken ct)
     {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        if (!Enum.IsDefined(typeof(OrderStatus), request.Status))
+            return BadRequest(new { error = "Invalid status value." });
+
         try
         {
             var updated = await _orderService.UpdateStatusAsync(id, request.Status, ct);

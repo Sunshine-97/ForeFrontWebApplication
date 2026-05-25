@@ -1,5 +1,4 @@
 using ForeFrontWebApplication.Models.Order;
-using ForeFrontWebApplication.Models.Order;
 using ForeFrontWebApplication.Models.Warehouse;
 using ForeFrontWebApplication.Repositories.Warehouse;
 

@@ -53,35 +53,6 @@ volumes:
 
 ---
 
-## EF Core Setup
-
-**Packages:**
-```
-Microsoft.EntityFrameworkCore 8.x
-Npgsql.EntityFrameworkCore.PostgreSQL 8.x
-Microsoft.EntityFrameworkCore.Design 8.x
-```
-
-**`AppDbContext`** in `Data/AppDbContext.cs`:
-```csharp
-public sealed class AppDbContext : DbContext
-{
-    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
-    public DbSet<Order> Orders { get; init; } = null!;
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
-        => modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
-}
-```
-
-**`Program.cs`:**
-```csharp
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")
-        ?? throw new InvalidOperationException("Connection string 'DefaultConnection' is missing.")));
-```
-
----
-
 ## Entity Configuration
 
 - One `IEntityTypeConfiguration<T>` class per entity — never inline in `OnModelCreating`.

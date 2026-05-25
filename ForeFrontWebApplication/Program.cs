@@ -138,17 +138,28 @@ app.UseExceptionHandler(errorApp =>
     errorApp.Run(async context =>
     {
         var feature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+        var logger  = context.RequestServices.GetRequiredService<ILogger<Program>>();
+
         if (feature?.Error is KeyNotFoundException)
         {
+            logger.LogWarning(feature.Error, "Resource not found");
             context.Response.StatusCode  = StatusCodes.Status404NotFound;
             context.Response.ContentType = "application/json";
-            await context.Response.WriteAsJsonAsync(new { error = feature.Error.Message });
+            await context.Response.WriteAsJsonAsync(new { error = "Resource not found." });
         }
         else if (feature?.Error is InvalidOperationException)
         {
+            logger.LogWarning(feature.Error, "Invalid operation");
             context.Response.StatusCode  = StatusCodes.Status400BadRequest;
             context.Response.ContentType = "application/json";
-            await context.Response.WriteAsJsonAsync(new { error = feature.Error.Message });
+            await context.Response.WriteAsJsonAsync(new { error = "The request could not be processed." });
+        }
+        else if (feature?.Error is not null)
+        {
+            logger.LogError(feature.Error, "Unhandled exception");
+            context.Response.StatusCode  = StatusCodes.Status500InternalServerError;
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsJsonAsync(new { error = "An unexpected error occurred." });
         }
     });
 });

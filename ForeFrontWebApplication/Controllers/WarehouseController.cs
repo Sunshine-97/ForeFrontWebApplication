@@ -2,6 +2,7 @@ using ForeFrontWebApplication.Models.Warehouse;
 using ForeFrontWebApplication.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace ForeFrontWebApplication.Controllers;
 
@@ -22,6 +23,7 @@ public sealed class WarehouseController : ControllerBase
     }
 
     [HttpGet("volumes")]
+    [EnableRateLimiting("ReadById")]
     [ProducesResponseType(typeof(IReadOnlyList<OrderVolumes>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -41,6 +43,7 @@ public sealed class WarehouseController : ControllerBase
     }
 
     [HttpGet("top-products")]
+    [EnableRateLimiting("ReadById")]
     [ProducesResponseType(typeof(IReadOnlyList<OrderVolumes>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]

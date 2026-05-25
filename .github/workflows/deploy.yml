@@ -1,0 +1,23 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create secret files from GitHub secrets
+        run: |
+          mkdir -p ForeFrontWebApplication/secrets
+          echo "${{ secrets.POSTGRES_USER }}" > ForeFrontWebApplication/secrets/postgres_user.txt
+          echo "${{ secrets.POSTGRES_PASSWORD }}" > ForeFrontWebApplication/secrets/postgres_password.txt
+          echo "${{ secrets.POSTGRES_DB }}" > ForeFrontWebApplication/secrets/postgres_db.txt
+
+      - name: Start services
+        run: docker compose -f ForeFrontWebApplication/docker-compose.yml up -d
