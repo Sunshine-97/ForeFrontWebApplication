@@ -12,16 +12,16 @@ public sealed class CreateOrderCommandHandler(
     IProductRepository products)
     : IRequestHandler<CreateOrderCommand, OrderResponse>
 {
-    public async Task<OrderResponse> Handle(CreateOrderCommand cmd, CancellationToken ct)
+    public async Task<OrderResponse> Handle(CreateOrderCommand req, CancellationToken ct)
     {
-        if (!await customers.ExistsAsync(cmd.KundId, ct))
-            throw new KeyNotFoundException($"Customer '{cmd.KundId}' not found.");
+        if (!await customers.ExistsAsync(req.KundId, ct))
+            throw new KeyNotFoundException($"Customer '{req.KundId}' not found.");
 
         var orderId = Guid.NewGuid().ToString();
-        var lines   = new List<OrderLine>(cmd.Produkter.Count);
+        var lines   = new List<OrderLine>(req.Produkter.Count);
         var total   = 0m;
 
-        foreach (var item in cmd.Produkter)
+        foreach (var item in req.Produkter)
         {
             var product = await products.GetByIdAsync(item.ProduktId, ct)
                 ?? throw new KeyNotFoundException($"Product '{item.ProduktId}' not found.");
@@ -42,7 +42,7 @@ public sealed class CreateOrderCommandHandler(
         var order = new Orders
         {
             OrderId  = orderId,
-            KundId   = cmd.KundId,
+            KundId   = req.KundId,
             Produkter = lines,
             Status   = OrderStatus.Pending,
             Created  = DateTime.UtcNow,
