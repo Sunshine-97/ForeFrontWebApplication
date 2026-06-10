@@ -1,7 +1,9 @@
+using ForeFrontWebApplication.Commands;
 using ForeFrontWebApplication.Controllers;
 using ForeFrontWebApplication.DTOs.Order;
 using ForeFrontWebApplication.Models.Order;
-using ForeFrontWebApplication.Services;
+using ForeFrontWebApplication.Queries;
+using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -15,12 +17,12 @@ namespace ForeFrontWebApplication.Tests.Controllers;
 
 public class OrdersControllerTests
 {
-    private readonly IOrderService _service = Substitute.For<IOrderService>();
+    private readonly IMediator _mediator = Substitute.For<IMediator>();
     private readonly OrdersController _sut;
 
     public OrdersControllerTests()
     {
-        _sut = new OrdersController(_service, NullLogger<OrdersController>.Instance)
+        _sut = new OrdersController(_mediator, NullLogger<OrdersController>.Instance)
         {
             ControllerContext = new ControllerContext
             {
@@ -51,7 +53,8 @@ public class OrdersControllerTests
     [Fact]
     public async Task GetAll_ReturnsOkWithOrders()
     {
-        _service.GetAllAsync().Returns(new List<Orders> { BuildOrder() }.AsReadOnly());
+        _mediator.Send(Arg.Any<GetAllOrdersQuery>(), Arg.Any<CancellationToken>())
+                 .Returns(new List<Orders> { BuildOrder() }.AsReadOnly());
 
         var result = await _sut.GetAll(CancellationToken.None);
 
@@ -65,7 +68,8 @@ public class OrdersControllerTests
     public async Task GetById_ExistingOrder_ReturnsOk()
     {
         var order = BuildOrder();
-        _service.GetByIdAsync(order.OrderId).Returns(order);
+        _mediator.Send(Arg.Any<GetOrderByIdQuery>(), Arg.Any<CancellationToken>())
+                 .Returns(order);
 
         var result = await _sut.GetById(order.OrderId, CancellationToken.None);
 
@@ -76,7 +80,8 @@ public class OrdersControllerTests
     [Fact]
     public async Task GetById_UnknownId_ReturnsNotFound()
     {
-        _service.GetByIdAsync(Arg.Any<string>()).Returns((Orders?)null);
+        _mediator.Send(Arg.Any<GetOrderByIdQuery>(), Arg.Any<CancellationToken>())
+                 .Returns((Orders?)null);
 
         Assert.IsType<NotFoundResult>(await _sut.GetById("unknown", CancellationToken.None));
     }
@@ -87,7 +92,8 @@ public class OrdersControllerTests
     public async Task Create_ValidRequest_ReturnsCreatedAtAction()
     {
         var fakeResponse = new OrderResponse { OrderId = "order-1", Status = OrderStatus.Pending };
-        _service.CreateAsync(Arg.Any<OrderRequest>()).Returns(fakeResponse);
+        _mediator.Send(Arg.Any<CreateOrderCommand>(), Arg.Any<CancellationToken>())
+                 .Returns(fakeResponse);
 
         var result = await _sut.Create(BuildCreateRequest(), CancellationToken.None);
 
@@ -113,7 +119,8 @@ public class OrdersControllerTests
     {
         var order = BuildOrder();
         order.Status = OrderStatus.Confirmed;
-        _service.UpdateStatusAsync(order.OrderId, OrderStatus.Confirmed).Returns(order);
+        _mediator.Send(Arg.Any<UpdateOrderStatusCommand>(), Arg.Any<CancellationToken>())
+                 .Returns(order);
 
         var result = await _sut.UpdateStatus(order.OrderId,
             new UpdateStatusRequest { Status = OrderStatus.Confirmed },
@@ -126,8 +133,8 @@ public class OrdersControllerTests
     [Fact]
     public async Task UpdateStatus_InvalidTransition_ReturnsBadRequest()
     {
-        _service.UpdateStatusAsync(Arg.Any<string>(), Arg.Any<OrderStatus>())
-                .Throws(new InvalidOperationException());
+        _mediator.Send(Arg.Any<UpdateOrderStatusCommand>(), Arg.Any<CancellationToken>())
+                 .Throws(new InvalidOperationException());
 
         Assert.IsType<BadRequestObjectResult>(
             await _sut.UpdateStatus("order-1",
@@ -138,8 +145,8 @@ public class OrdersControllerTests
     [Fact]
     public async Task UpdateStatus_UnknownId_ReturnsNotFound()
     {
-        _service.UpdateStatusAsync(Arg.Any<string>(), Arg.Any<OrderStatus>())
-                .Returns((Orders?)null);
+        _mediator.Send(Arg.Any<UpdateOrderStatusCommand>(), Arg.Any<CancellationToken>())
+                 .Returns((Orders?)null);
 
         Assert.IsType<NotFoundResult>(
             await _sut.UpdateStatus("unknown",
@@ -152,7 +159,8 @@ public class OrdersControllerTests
     [Fact]
     public async Task Delete_ExistingOrder_ReturnsNoContent()
     {
-        _service.DeleteAsync("order-1").Returns(true);
+        _mediator.Send(Arg.Any<DeleteOrderCommand>(), Arg.Any<CancellationToken>())
+                 .Returns(true);
 
         Assert.IsType<NoContentResult>(await _sut.Delete("order-1", CancellationToken.None));
     }
@@ -160,8 +168,10 @@ public class OrdersControllerTests
     [Fact]
     public async Task Delete_UnknownId_ReturnsNotFound()
     {
-        _service.DeleteAsync(Arg.Any<string>()).Returns(false);
+        _mediator.Send(Arg.Any<DeleteOrderCommand>(), Arg.Any<CancellationToken>())
+                 .Returns(false);
 
         Assert.IsType<NotFoundResult>(await _sut.Delete("unknown", CancellationToken.None));
     }
 }
+

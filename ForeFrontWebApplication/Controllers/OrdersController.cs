@@ -87,8 +87,16 @@ public sealed class OrdersController : ControllerBase
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var updated = await _mediator.Send(
-            new UpdateOrderStatusCommand(id, request.Status), ct);
+        Orders? updated;
+        try
+        {
+            updated = await _mediator.Send(new UpdateOrderStatusCommand(id, request.Status), ct);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+
         if (updated is null)
             return NotFound();
 

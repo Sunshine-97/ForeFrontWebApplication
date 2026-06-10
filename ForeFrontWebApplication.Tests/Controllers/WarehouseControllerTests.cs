@@ -1,6 +1,7 @@
 using ForeFrontWebApplication.Controllers;
 using ForeFrontWebApplication.Models.Warehouse;
-using ForeFrontWebApplication.Services;
+using ForeFrontWebApplication.Queries;
+using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -13,12 +14,12 @@ namespace ForeFrontWebApplication.Tests.Controllers;
 
 public class WarehouseControllerTests
 {
-    private readonly IWarehouseService _service = Substitute.For<IWarehouseService>();
+    private readonly IMediator _mediator = Substitute.For<IMediator>();
     private readonly WarehouseController _sut;
 
     public WarehouseControllerTests()
     {
-        _sut = new WarehouseController(_service, NullLogger<WarehouseController>.Instance)
+        _sut = new WarehouseController(_mediator, NullLogger<WarehouseController>.Instance)
         {
             ControllerContext = new ControllerContext
             {
@@ -41,7 +42,8 @@ public class WarehouseControllerTests
     [Fact]
     public async Task GetVolumes_NoDates_ReturnsOkWithVolumes()
     {
-        _service.GetVolumesAsync().Returns(FakeVolumes());
+        _mediator.Send(Arg.Any<GetVolumesQuery>(), Arg.Any<CancellationToken>())
+                 .Returns(FakeVolumes());
 
         var result = await _sut.GetVolumes(null, null, CancellationToken.None);
 
@@ -54,12 +56,15 @@ public class WarehouseControllerTests
     {
         var from = new DateTime(2026, 4, 1, 0, 0, 0, DateTimeKind.Utc);
         var to   = new DateTime(2026, 4, 30, 0, 0, 0, DateTimeKind.Utc);
-        _service.GetVolumesAsync(from, to).Returns(FakeVolumes());
+        _mediator.Send(Arg.Any<GetVolumesQuery>(), Arg.Any<CancellationToken>())
+                 .Returns(FakeVolumes());
 
         var result = await _sut.GetVolumes(from, to, CancellationToken.None);
 
         Assert.IsType<OkObjectResult>(result);
-        await _service.Received(1).GetVolumesAsync(from, to);
+        await _mediator.Received(1).Send(
+            Arg.Is<GetVolumesQuery>(q => q.From == from && q.To == to),
+            Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -68,13 +73,14 @@ public class WarehouseControllerTests
         var result = await _sut.GetVolumes(DateTime.UtcNow, DateTime.UtcNow.AddDays(-1), CancellationToken.None);
 
         Assert.IsType<BadRequestObjectResult>(result);
-        await _service.DidNotReceive().GetVolumesAsync(Arg.Any<DateTime?>(), Arg.Any<DateTime?>());
+        await _mediator.DidNotReceive().Send(Arg.Any<GetVolumesQuery>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task GetVolumes_EmptyResult_ReturnsOkWithEmptyList()
     {
-        _service.GetVolumesAsync().Returns(Array.Empty<OrderVolumes>());
+        _mediator.Send(Arg.Any<GetVolumesQuery>(), Arg.Any<CancellationToken>())
+                 .Returns(Array.Empty<OrderVolumes>());
 
         var result = await _sut.GetVolumes(null, null, CancellationToken.None);
 
@@ -87,7 +93,8 @@ public class WarehouseControllerTests
     [Fact]
     public async Task GetTopProducts_ReturnsOkWithList()
     {
-        _service.GetTopProductsAsync().Returns(FakeVolumes());
+        _mediator.Send(Arg.Any<GetTopProductsQuery>(), Arg.Any<CancellationToken>())
+                 .Returns(FakeVolumes());
 
         var result = await _sut.GetTopProducts(CancellationToken.None);
 
@@ -98,7 +105,8 @@ public class WarehouseControllerTests
     [Fact]
     public async Task GetTopProducts_EmptyResult_ReturnsOkWithEmptyList()
     {
-        _service.GetTopProductsAsync().Returns(Array.Empty<OrderVolumes>());
+        _mediator.Send(Arg.Any<GetTopProductsQuery>(), Arg.Any<CancellationToken>())
+                 .Returns(Array.Empty<OrderVolumes>());
 
         var result = await _sut.GetTopProducts(CancellationToken.None);
 
@@ -109,10 +117,11 @@ public class WarehouseControllerTests
     [Fact]
     public async Task GetTopProducts_ServiceCalledOnce()
     {
-        _service.GetTopProductsAsync().Returns(Array.Empty<OrderVolumes>());
+        _mediator.Send(Arg.Any<GetTopProductsQuery>(), Arg.Any<CancellationToken>())
+                 .Returns(Array.Empty<OrderVolumes>());
 
         await _sut.GetTopProducts(CancellationToken.None);
 
-        await _service.Received(1).GetTopProductsAsync();
+        await _mediator.Received(1).Send(Arg.Any<GetTopProductsQuery>(), Arg.Any<CancellationToken>());
     }
 }
