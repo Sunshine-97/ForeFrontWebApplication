@@ -1,17 +1,17 @@
 using System.Threading.RateLimiting;
 using System.Text;
+using FluentValidation;
 using ForeFrontWebApplication.Data;
-using ForeFrontWebApplication.Repositories.CustomerRepo;
-using ForeFrontWebApplication.Repositories.OrderRepo;
-using ForeFrontWebApplication.Repositories.ProductRepo;
-using ForeFrontWebApplication.Repositories.WarehouseRepo;
 using ForeFrontWebApplication.Services;
 using ForeFrontWebApplication.Settings;
+using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using ForeFrontWebApplication.Repositories;
+using ForeFrontWebApplication.Shared.Behaviors;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -57,10 +57,14 @@ builder.Services.AddScoped<ICustomerRepository,  CustomerRepository>();
 builder.Services.AddScoped<IProductRepository,   ProductRepository>();
 builder.Services.AddScoped<IOrderRepository,     OrderRepository>();
 builder.Services.AddScoped<IWarehouseRepository, WarehouseRepository>();
-builder.Services.AddScoped<IOrderService,        OrderService>();
-builder.Services.AddScoped<IWarehouseService,    WarehouseService>();
 builder.Services.AddSingleton<ITokenService, TokenService>();
 builder.Services.AddSingleton<IAuthService,  AuthService>();
+
+// CQRS: MediatR handlers, FluentValidation validators and the validation pipeline
+builder.Services.AddMediatR(cfg =>
+    cfg.RegisterServicesFromAssemblyContaining<Program>());
+builder.Services.AddValidatorsFromAssemblyContaining<Program>(includeInternalTypes: true);
+builder.Services.AddScoped(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 
 // Authorization 
 builder.Services.AddAuthorizationBuilder()
@@ -140,7 +144,18 @@ app.UseExceptionHandler(errorApp =>
         var feature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
         var logger  = context.RequestServices.GetRequiredService<ILogger<Program>>();
 
-        if (feature?.Error is KeyNotFoundException)
+        if (feature?.Error is ValidationException validationException)
+        {
+            logger.LogWarning(feature.Error, "Validation failed");
+            context.Response.StatusCode  = StatusCodes.Status400BadRequest;
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsJsonAsync(new
+            {
+                error  = "Validation failed.",
+                errors = validationException.Errors.Select(e => e.ErrorMessage)
+            });
+        }
+        else if (feature?.Error is KeyNotFoundException)
         {
             logger.LogWarning(feature.Error, "Resource not found");
             context.Response.StatusCode  = StatusCodes.Status404NotFound;

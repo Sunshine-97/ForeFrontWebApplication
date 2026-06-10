@@ -2,7 +2,7 @@ using ForeFrontWebApplication.Data;
 using ForeFrontWebApplication.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace ForeFrontWebApplication.Repositories.CustomerRepo
+namespace ForeFrontWebApplication.Repositories
 {
   public sealed class CustomerRepository : ICustomerRepository
   {

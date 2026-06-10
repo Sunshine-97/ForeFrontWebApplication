@@ -3,9 +3,7 @@ using System.Text.Json;
 using ForeFrontWebApplication.Models;
 using ForeFrontWebApplication.Models.Order;
 using ForeFrontWebApplication.Models.Product;
-using ForeFrontWebApplication.Repositories.CustomerRepo;
-using ForeFrontWebApplication.Repositories.OrderRepo;
-using ForeFrontWebApplication.Repositories.ProductRepo;
+using ForeFrontWebApplication.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 namespace ForeFrontWebApplication.Data;

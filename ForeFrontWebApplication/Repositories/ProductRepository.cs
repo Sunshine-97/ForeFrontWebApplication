@@ -2,7 +2,7 @@ using ForeFrontWebApplication.Data;
 using Microsoft.EntityFrameworkCore;
 using ForeFrontWebApplication.Models.Product;
 
-namespace ForeFrontWebApplication.Repositories.ProductRepo
+namespace ForeFrontWebApplication.Repositories
 {
 
   public sealed class ProductRepository : IProductRepository

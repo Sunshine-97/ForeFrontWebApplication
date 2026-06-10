@@ -1,6 +1,6 @@
 using ForeFrontWebApplication.Models.Product;
 
-namespace ForeFrontWebApplication.Repositories.ProductRepo
+namespace ForeFrontWebApplication.Repositories
 {
 
   public interface IProductRepository

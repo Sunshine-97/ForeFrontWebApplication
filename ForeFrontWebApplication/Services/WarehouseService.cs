@@ -1,6 +1,6 @@
 using ForeFrontWebApplication.Models.Order;
 using ForeFrontWebApplication.Models.Warehouse;
-using ForeFrontWebApplication.Repositories.WarehouseRepo;
+using ForeFrontWebApplication.Repositories;
 
 namespace ForeFrontWebApplication.Services;
 

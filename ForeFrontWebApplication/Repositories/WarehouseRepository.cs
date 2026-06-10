@@ -2,7 +2,7 @@ using ForeFrontWebApplication.Data;
 using ForeFrontWebApplication.Models.Order;
 using Microsoft.EntityFrameworkCore;
 
-namespace ForeFrontWebApplication.Repositories.WarehouseRepo
+namespace ForeFrontWebApplication.Repositories
 {
   public sealed class WarehouseRepository : IWarehouseRepository
   {

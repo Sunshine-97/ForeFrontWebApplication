@@ -1,6 +1,6 @@
 using ForeFrontWebApplication.Models;
 
-namespace ForeFrontWebApplication.Repositories.CustomerRepo
+namespace ForeFrontWebApplication.Repositories
 {
   public interface ICustomerRepository
   {

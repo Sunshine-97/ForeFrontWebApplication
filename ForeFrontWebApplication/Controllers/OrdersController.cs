@@ -1,6 +1,8 @@
 using ForeFrontWebApplication.DTOs.Order;
 using ForeFrontWebApplication.Models.Order;
-using ForeFrontWebApplication.Services;
+using ForeFrontWebApplication.Queries;
+using ForeFrontWebApplication.Commands;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -14,13 +16,13 @@ namespace ForeFrontWebApplication.Controllers;
 [Authorize]
 public sealed class OrdersController : ControllerBase
 {
-    private readonly IOrderService _orderService;
+    private readonly IMediator _mediator;
     private readonly ILogger<OrdersController> _logger;
 
-    public OrdersController(IOrderService orderService, ILogger<OrdersController> logger)
+    public OrdersController(IMediator mediator, ILogger<OrdersController> logger)
     {
-        _orderService = orderService;
-        _logger       = logger;
+        _mediator = mediator;
+        _logger   = logger;
     }
 
     [HttpGet]
@@ -31,7 +33,7 @@ public sealed class OrdersController : ControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetAll(CancellationToken ct)
     {
-        return Ok(await _orderService.GetAllAsync(ct));
+        return Ok(await _mediator.Send(new GetAllOrdersQuery(), ct));
     }
 
     [HttpGet("{id}")]
@@ -43,7 +45,7 @@ public sealed class OrdersController : ControllerBase
     [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> GetById(string id, CancellationToken ct)
     {
-        var order = await _orderService.GetByIdAsync(id, ct);
+        var order = await _mediator.Send(new GetOrderByIdQuery(id), ct);
         if (order is null)
             return NotFound();
 
@@ -62,7 +64,8 @@ public sealed class OrdersController : ControllerBase
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var created = await _orderService.CreateAsync(request, ct);
+        var created = await _mediator.Send(
+            new CreateOrderCommand(request.KundId, request.Produkter), ct);
 
         _logger.LogInformation("Order {OrderId} created by {UserId}",
             created.OrderId, User.Identity?.Name);
@@ -84,24 +87,15 @@ public sealed class OrdersController : ControllerBase
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        if (!Enum.IsDefined(typeof(OrderStatus), request.Status))
-            return BadRequest(new { error = "Invalid status value." });
+        var updated = await _mediator.Send(
+            new UpdateOrderStatusCommand(id, request.Status), ct);
+        if (updated is null)
+            return NotFound();
 
-        try
-        {
-            var updated = await _orderService.UpdateStatusAsync(id, request.Status, ct);
-            if (updated is null)
-                return NotFound();
+        _logger.LogInformation("Order {OrderId} status updated to {Status} by {UserId}",
+            id, request.Status, User.Identity?.Name);
 
-            _logger.LogInformation("Order {OrderId} status updated to {Status} by {UserId}",
-                id, request.Status, User.Identity?.Name);
-
-            return Ok(updated);
-        }
-        catch (InvalidOperationException)
-        {
-            return BadRequest(new { error = "Ogiltig statusövergång." });
-        }
+        return Ok(updated);
     }
 
     [HttpDelete("{id}")]
@@ -114,7 +108,7 @@ public sealed class OrdersController : ControllerBase
     [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> Delete(string id, CancellationToken ct)
     {
-        if (!await _orderService.DeleteAsync(id, ct))
+        if (!await _mediator.Send(new DeleteOrderCommand(id), ct))
             return NotFound();
 
         _logger.LogWarning("Order {OrderId} deleted by {UserId}", id, User.Identity?.Name);

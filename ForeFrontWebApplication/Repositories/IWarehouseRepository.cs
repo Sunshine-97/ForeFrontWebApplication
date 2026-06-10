@@ -1,6 +1,6 @@
 using ForeFrontWebApplication.Models.Order;
 
-namespace ForeFrontWebApplication.Repositories.WarehouseRepo
+namespace ForeFrontWebApplication.Repositories
 {
   public interface IWarehouseRepository
   {

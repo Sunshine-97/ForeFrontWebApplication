@@ -2,7 +2,7 @@ using ForeFrontWebApplication.Data;
 using ForeFrontWebApplication.Models.Order;
 using Microsoft.EntityFrameworkCore;
 
-namespace ForeFrontWebApplication.Repositories.OrderRepo
+namespace ForeFrontWebApplication.Repositories
 {
   /// <summary>
   /// EF Core + PostgreSQL implementation of <see cref="IOrderRepository"/>.
