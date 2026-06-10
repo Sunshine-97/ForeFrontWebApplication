@@ -1,13 +1,12 @@
 using ForeFrontWebApplication.Models.Order;
-using ForeFrontWebApplication.Models.Customer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace ForeFrontWebApplication.Data.Configurations;
 
-public sealed class OrderConfiguration : IEntityTypeConfiguration<OrderEntity>
+public sealed class OrderConfiguration : IEntityTypeConfiguration<Orders>
 {
-    public void Configure(EntityTypeBuilder<OrderEntity> builder)
+    public void Configure(EntityTypeBuilder<Orders> builder)
     {
         builder.ToTable("orders");
 

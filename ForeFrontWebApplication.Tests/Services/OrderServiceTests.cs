@@ -1,9 +1,9 @@
 using FakeItEasy;
 using ForeFrontWebApplication.DTOs.Order;
 using ForeFrontWebApplication.Models.Order;
-using ForeFrontWebApplication.Repositories.Customer;
-using ForeFrontWebApplication.Repositories.Product;
-using ForeFrontWebApplication.Repositories.Order;
+using ForeFrontWebApplication.Repositories.CustomerRepo;
+using ForeFrontWebApplication.Repositories.ProductRepo;
+using ForeFrontWebApplication.Repositories.OrderRepo;
 using ForeFrontWebApplication.Services;
 using NSubstitute;
 using Xunit;
@@ -34,7 +34,7 @@ public class OrderServiceTests
         ]
     };
 
-    private static OrderEntity BuildStoredOrder(string orderId = "order-1", OrderStatus status = OrderStatus.Pending) => new()
+    private static Orders BuildStoredOrder(string orderId = "order-1", OrderStatus status = OrderStatus.Pending) => new()
     {
         OrderId   = orderId,
         KundId    = "K-001",
@@ -60,7 +60,7 @@ public class OrderServiceTests
         Assert.NotNull(result.OrderId);
         Assert.NotEmpty(result.OrderId);
         Assert.Equal(OrderStatus.Pending, result.Status);
-        await _repository.Received(1).AddAsync(Arg.Any<OrderEntity>(), Arg.Any<CancellationToken>());
+        await _repository.Received(1).AddAsync(Arg.Any<Orders>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -72,7 +72,7 @@ public class OrderServiceTests
 
         await _sut.CreateAsync(BuildRequest());
 
-        await _repository.Received(1).AddAsync(Arg.Is<OrderEntity>(o =>
+        await _repository.Received(1).AddAsync(Arg.Is<Orders>(o =>
             o.KundId == "K-001" &&
             o.Status == OrderStatus.Pending &&
             o.Produkter.Count == 2));
@@ -83,7 +83,7 @@ public class OrderServiceTests
     [Fact]
     public async Task GetAll_DelegatesToRepository()
     {
-        var orders = new List<OrderEntity> { BuildStoredOrder("o1"), BuildStoredOrder("o2") }.AsReadOnly();
+        var orders = new List<Orders> { BuildStoredOrder("o1"), BuildStoredOrder("o2") }.AsReadOnly();
         _repository.GetAllAsync(Arg.Any<CancellationToken>()).Returns(orders);
 
         var result = await _sut.GetAllAsync();
@@ -108,7 +108,7 @@ public class OrderServiceTests
     [Fact]
     public async Task GetById_UnknownId_ReturnsNull()
     {
-        _repository.GetByIdAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((OrderEntity?)null);
+        _repository.GetByIdAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((Orders?)null);
 
         Assert.Null(await _sut.GetByIdAsync("unknown"));
     }
@@ -130,7 +130,7 @@ public class OrderServiceTests
     [Fact]
     public async Task UpdateStatus_UnknownId_ReturnsNull()
     {
-        _repository.GetByIdAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((OrderEntity?)null);
+        _repository.GetByIdAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((Orders?)null);
 
         Assert.Null(await _sut.UpdateStatusAsync("unknown", OrderStatus.Confirmed));
     }

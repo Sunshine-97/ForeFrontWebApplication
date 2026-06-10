@@ -1,10 +1,10 @@
-﻿using System.Threading.RateLimiting;
+using System.Threading.RateLimiting;
 using System.Text;
 using ForeFrontWebApplication.Data;
-using ForeFrontWebApplication.Repositories.Customer;
-using ForeFrontWebApplication.Repositories.Order;
-using ForeFrontWebApplication.Repositories.Product;
-using ForeFrontWebApplication.Repositories.Warehouse;
+using ForeFrontWebApplication.Repositories.CustomerRepo;
+using ForeFrontWebApplication.Repositories.OrderRepo;
+using ForeFrontWebApplication.Repositories.ProductRepo;
+using ForeFrontWebApplication.Repositories.WarehouseRepo;
 using ForeFrontWebApplication.Services;
 using ForeFrontWebApplication.Settings;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -15,7 +15,7 @@ using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ?? JWT settings
+// JWT settings
 // Supply Jwt:SigningKey via environment variable or secrets manager in production.
 // Never commit a real signing key to source control.
 var jwtSettings = builder.Configuration
@@ -27,7 +27,7 @@ var jwtSettings = builder.Configuration
 builder.Services.Configure<JwtSettings>(
     builder.Configuration.GetSection(JwtSettings.SectionName));
 
-// ?? Authentication
+// Authentication
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -53,22 +53,22 @@ builder.Services.AddDbContext<AppDbContext>(options =>
             ?? throw new InvalidOperationException(
                 "Connection string 'DefaultConnection' is missing.")));
 
-builder.Services.AddScoped<ICustomerRepository,  EfCustomerRepository>();
-builder.Services.AddScoped<IProductRepository,   EfProductRepository>();
-builder.Services.AddScoped<IOrderRepository,     EfOrderRepository>();
-builder.Services.AddScoped<IWarehouseRepository, EfWarehouseRepository>();
+builder.Services.AddScoped<ICustomerRepository,  CustomerRepository>();
+builder.Services.AddScoped<IProductRepository,   ProductRepository>();
+builder.Services.AddScoped<IOrderRepository,     OrderRepository>();
+builder.Services.AddScoped<IWarehouseRepository, WarehouseRepository>();
 builder.Services.AddScoped<IOrderService,        OrderService>();
 builder.Services.AddScoped<IWarehouseService,    WarehouseService>();
 builder.Services.AddSingleton<ITokenService, TokenService>();
 builder.Services.AddSingleton<IAuthService,  AuthService>();
 
-// ?? Authorization 
+// Authorization 
 builder.Services.AddAuthorizationBuilder()
     .AddPolicy("Customer", policy => policy.RequireRole("Customer"))
     .AddPolicy("Warehouse", policy => policy.RequireRole("Warehouse"))
     .AddPolicy("Admin", policy => policy.RequireRole("Admin"));
 
-// ?? Rate Limiting 
+// Rate Limiting 
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -90,7 +90,7 @@ builder.Services.AddRateLimiter(options =>
     });
 });
 
-// ?? MVC / API 
+// MVC / API 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>

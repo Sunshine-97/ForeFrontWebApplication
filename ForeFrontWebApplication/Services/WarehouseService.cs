@@ -1,6 +1,6 @@
 using ForeFrontWebApplication.Models.Order;
 using ForeFrontWebApplication.Models.Warehouse;
-using ForeFrontWebApplication.Repositories.Warehouse;
+using ForeFrontWebApplication.Repositories.WarehouseRepo;
 
 namespace ForeFrontWebApplication.Services;
 
@@ -28,7 +28,7 @@ public sealed class WarehouseService : IWarehouseService
         return AggregateProducts(orders).Take(10).ToList().AsReadOnly();
     }
 
-    private static IReadOnlyList<OrderVolumes> AggregateProducts(IEnumerable<OrderEntity> orders)
+    private static IReadOnlyList<OrderVolumes> AggregateProducts(IEnumerable<Orders> orders)
     {
         return orders
             .SelectMany(order => order.Produkter)

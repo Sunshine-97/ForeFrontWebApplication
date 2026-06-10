@@ -2,15 +2,16 @@ using ForeFrontWebApplication.Data;
 using Microsoft.EntityFrameworkCore;
 using ForeFrontWebApplication.Models.Product;
 
-namespace ForeFrontWebApplication.Repositories.Product;
-
-public sealed class EfProductRepository : IProductRepository
+namespace ForeFrontWebApplication.Repositories.ProductRepo
 {
+
+  public sealed class ProductRepository : IProductRepository
+  {
     private readonly AppDbContext _db;
 
-    public EfProductRepository(AppDbContext db)
+    public ProductRepository(AppDbContext db)
     {
-        _db = db;
+      _db = db;
     }
 
     public async Task<Products> GetByIdAsync(string productId, CancellationToken ct = default) =>
@@ -21,7 +22,8 @@ public sealed class EfProductRepository : IProductRepository
 
     public async Task AddAsync(Products product, CancellationToken ct = default)
     {
-        await _db.Products.AddAsync(product, ct);
-        await _db.SaveChangesAsync(ct);
+      await _db.Products.AddAsync(product, ct);
+      await _db.SaveChangesAsync(ct);
     }
+  }
 }

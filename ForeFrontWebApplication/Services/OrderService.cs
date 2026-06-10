@@ -1,8 +1,8 @@
 using ForeFrontWebApplication.DTOs.Order;
 using ForeFrontWebApplication.Models.Order;
-using ForeFrontWebApplication.Repositories.Customer;
-using ForeFrontWebApplication.Repositories.Order;
-using ForeFrontWebApplication.Repositories.Product;
+using ForeFrontWebApplication.Repositories.CustomerRepo;
+using ForeFrontWebApplication.Repositories.OrderRepo;
+using ForeFrontWebApplication.Repositories.ProductRepo;
 
 namespace ForeFrontWebApplication.Services
 {
@@ -25,10 +25,10 @@ namespace ForeFrontWebApplication.Services
             _productRepository  = productRepository;
         }
 
-        public async Task<IReadOnlyList<OrderEntity>> GetAllAsync(CancellationToken ct = default) =>
+        public async Task<IReadOnlyList<Orders>> GetAllAsync(CancellationToken ct = default) =>
             await _orderRepository.GetAllAsync(ct);
 
-        public async Task<OrderEntity?> GetByIdAsync(string orderId, CancellationToken ct = default) =>
+        public async Task<Orders?> GetByIdAsync(string orderId, CancellationToken ct = default) =>
             await _orderRepository.GetByIdAsync(orderId, ct);
 
         public async Task<OrderResponse> CreateAsync(OrderRequest req, CancellationToken ct = default)
@@ -41,7 +41,7 @@ namespace ForeFrontWebApplication.Services
             var orderId   = Guid.NewGuid().ToString();
             var produkter = await MapToOrderLinesAsync(req.Produkter, orderId, ct);
 
-            var order = new OrderEntity
+            var order = new Orders
             {
                 OrderId   = orderId,
                 KundId    = req.KundId,
@@ -59,7 +59,7 @@ namespace ForeFrontWebApplication.Services
             };
         }
 
-        public async Task<OrderEntity?> UpdateStatusAsync(string orderId, OrderStatus newStatus, CancellationToken ct = default)
+        public async Task<Orders?> UpdateStatusAsync(string orderId, OrderStatus newStatus, CancellationToken ct = default)
         {
             var order = await _orderRepository.GetByIdAsync(orderId, ct);
             if (order is null)

@@ -26,7 +26,7 @@ public sealed class OrdersController : ControllerBase
     [HttpGet]
     [Authorize(Roles = "Admin,Warehouse")]
     [EnableRateLimiting("ReadById")]
-    [ProducesResponseType(typeof(IReadOnlyList<OrderEntity>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IReadOnlyList<Orders>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetAll(CancellationToken ct)
@@ -37,7 +37,7 @@ public sealed class OrdersController : ControllerBase
     [HttpGet("{id}")]
     [Authorize(Roles = "Admin,Warehouse")]
     [EnableRateLimiting("ReadById")]
-    [ProducesResponseType(typeof(OrderEntity), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(Orders), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
@@ -73,7 +73,7 @@ public sealed class OrdersController : ControllerBase
     [HttpPut("{id}/status")]
     [Authorize(Roles = "Admin,Warehouse")]
     [EnableRateLimiting("Mutate")]
-    [ProducesResponseType(typeof(OrderEntity), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(Orders), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -100,7 +100,7 @@ public sealed class OrdersController : ControllerBase
         }
         catch (InvalidOperationException)
         {
-            return BadRequest(new { error = "Ogiltig statusövergång." });
+            return BadRequest(new { error = "Ogiltig statusÃ¶vergÃ¥ng." });
         }
     }
 

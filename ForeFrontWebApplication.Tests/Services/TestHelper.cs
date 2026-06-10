@@ -15,7 +15,7 @@ internal static class TestHelper
     /// Reads <c>samples/testdata.json</c> and returns the orders it contains as domain objects.
     /// Order IDs, statuses and created dates are preserved exactly as declared in the file.
     /// </summary>
-    public static IList<OrderEntity> LoadOrders()
+    public static IList<Orders> LoadOrders()
     {
         var path = Path.Combine(AppContext.BaseDirectory, "samples", "testdata.json");
         var json = File.ReadAllText(path);
@@ -25,7 +25,7 @@ internal static class TestHelper
         return root.Orders.Select(MapOrder).ToList();
     }
 
-    private static OrderEntity MapOrder(TestOrderDto dto) => new()
+    private static Orders MapOrder(TestOrderDto dto) => new()
     {
         OrderId   = dto.OrderId,
         KundId    = dto.Kund.Email,

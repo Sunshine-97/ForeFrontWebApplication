@@ -1,7 +1,6 @@
 using ForeFrontWebApplication.Models.Order;
-using ForeFrontWebApplication.Models.Order;
 using ForeFrontWebApplication.Models.Warehouse;
-using ForeFrontWebApplication.Repositories.Warehouse;
+using ForeFrontWebApplication.Repositories.WarehouseRepo;
 using ForeFrontWebApplication.Services;
 using NSubstitute;
 using Xunit;
@@ -25,7 +24,7 @@ public class WarehouseServiceTests
 
     // ?? Mocked data builders ??????????????????????????????????????????????????
 
-    private static OrderEntity FakeOrder(
+    private static Orders FakeOrder(
         string           kundId,
         IList<OrderLine> produkter,
         DateTime         created,
@@ -52,19 +51,19 @@ public class WarehouseServiceTests
     /// <summary>
     /// Configures the repository mock to return the given orders for any date filter.
     /// </summary>
-    private void SetupDeliveredOrders(params OrderEntity[] orders) =>
+    private void SetupDeliveredOrders(params Orders[] orders) =>
         _repository
             .GetDeliveredOrdersAsync(Arg.Any<DateTime?>(), Arg.Any<DateTime?>(), Arg.Any<CancellationToken>())
-            .Returns((IReadOnlyList<OrderEntity>)orders.ToList());
+            .Returns((IReadOnlyList<Orders>)orders.ToList());
 
     private void SeedFromTestData() =>
         _repository
             .GetDeliveredOrdersAsync(Arg.Any<DateTime?>(), Arg.Any<DateTime?>(), Arg.Any<CancellationToken>())
-            .Returns((IReadOnlyList<OrderEntity>)TestHelper.LoadOrders()
+            .Returns((IReadOnlyList<Orders>)TestHelper.LoadOrders()
                 .Where(o => o.Status == OrderStatus.Delivered)
                 .ToList());
 
-    // ?? GetVolumesAsync — no date filter ?????????????????????????????????????
+    // ?? GetVolumesAsync â€” no date filter ?????????????????????????????????????
 
     [Fact]
     public async Task GetVolumes_NoDateFilter_AggregatesDeliveredOrders()
@@ -109,7 +108,7 @@ public class WarehouseServiceTests
         Assert.Empty(await _sut.GetVolumesAsync());
     }
 
-    // ?? GetVolumesAsync — date filter delegated to repository ?????????????????
+    // ?? GetVolumesAsync â€” date filter delegated to repository ?????????????????
 
     [Fact]
     public async Task GetVolumes_WithDateRange_PassesDatesToRepository()
@@ -118,7 +117,7 @@ public class WarehouseServiceTests
         var to   = new DateTime(2026, 3, 31, 0, 0, 0, DateTimeKind.Utc);
 
         _repository.GetDeliveredOrdersAsync(from, to, Arg.Any<CancellationToken>()).Returns(
-            (IReadOnlyList<OrderEntity>)new List<OrderEntity>());
+            (IReadOnlyList<Orders>)new List<Orders>());
 
         await _sut.GetVolumesAsync(from, to);
 
@@ -129,7 +128,7 @@ public class WarehouseServiceTests
     public async Task GetVolumes_WithDateFilter_EmptyRange_ReturnsEmpty()
     {
         _repository.GetDeliveredOrdersAsync(Arg.Any<DateTime?>(), Arg.Any<DateTime?>(), Arg.Any<CancellationToken>())
-                   .Returns((IReadOnlyList<OrderEntity>)new List<OrderEntity>());
+                   .Returns((IReadOnlyList<Orders>)new List<Orders>());
 
         Assert.Empty(await _sut.GetVolumesAsync(DateTime.UtcNow.AddDays(-7), DateTime.UtcNow.AddDays(-1)));
     }
@@ -190,7 +189,7 @@ public class WarehouseServiceTests
         Assert.Empty(await _sut.GetTopProductsAsync());
     }
 
-    // ?? Seeded tests — realistic data from samples/testdata.json ?????????????
+    // ?? Seeded tests â€” realistic data from samples/testdata.json ?????????????
 
     [Fact]
     public async Task GetVolumes_WithTestData_ReturnsTenUniqueProducts()
