@@ -20,10 +20,6 @@ public sealed class AuthController : ControllerBase
         _logger = logger;
     }
 
-    /// <summary>
-    /// Issues a JWT for valid credentials. The token carries the caller's role claim
-    /// and must be sent as a Bearer token on subsequent requests.
-    /// </summary>
     [HttpPost("token")]
     [EnableRateLimiting("Mutate")]
     [ProducesResponseType(typeof(TokenResponse), StatusCodes.Status200OK)]

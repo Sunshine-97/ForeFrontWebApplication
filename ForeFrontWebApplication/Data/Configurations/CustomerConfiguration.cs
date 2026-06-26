@@ -1,12 +1,12 @@
-using ForeFrontWebApplication.Models.Customer;
+using ForeFrontWebApplication.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace ForeFrontWebApplication.Data.Configurations;
 
-public sealed class CustomerConfiguration : IEntityTypeConfiguration<Customers>
+public sealed class CustomerConfiguration : IEntityTypeConfiguration<Customer>
 {
-    public void Configure(EntityTypeBuilder<Customers> builder)
+    public void Configure(EntityTypeBuilder<Customer> builder)
     {
         builder.ToTable("customers");
 

@@ -1,11 +1,9 @@
-﻿using System.Reflection;
+using System.Reflection;
 using System.Text.Json;
-using ForeFrontWebApplication.Models.Customer;
+using ForeFrontWebApplication.Models;
 using ForeFrontWebApplication.Models.Order;
 using ForeFrontWebApplication.Models.Product;
-using ForeFrontWebApplication.Repositories.Customer;
-using ForeFrontWebApplication.Repositories.Order;
-using ForeFrontWebApplication.Repositories.Product;
+using ForeFrontWebApplication.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 namespace ForeFrontWebApplication.Data;
@@ -77,7 +75,7 @@ public static class DataSeeder
 
         var customers = seedData.Orders
             .GroupBy(o => o.Kund.Email)
-            .Select(g => new Customers
+            .Select(g => new Customer
             {
                 CustomerId = Guid.NewGuid().ToString(),
                 Namn       = g.First().Kund.Namn,
@@ -104,7 +102,7 @@ public static class DataSeeder
         var customerLookup = await context.Customers
             .ToDictionaryAsync(c => c.Email, c => c.CustomerId);
 
-        var orders = seedData.Orders.Select(o => new OrderEntity
+        var orders = seedData.Orders.Select(o => new Orders
         {
             OrderId   = o.OrderId,
             KundId    = customerLookup[o.Kund.Email],

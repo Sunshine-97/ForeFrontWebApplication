@@ -1,5 +1,6 @@
 using ForeFrontWebApplication.Models.Warehouse;
-using ForeFrontWebApplication.Services;
+using ForeFrontWebApplication.Queries;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -13,13 +14,13 @@ namespace ForeFrontWebApplication.Controllers;
 [Authorize(Roles = "Warehouse,Admin")]
 public sealed class WarehouseController : ControllerBase
 {
-    private readonly IWarehouseService _warehouseService;
+    private readonly IMediator _mediator;
     private readonly ILogger<WarehouseController> _logger;
 
-    public WarehouseController(IWarehouseService warehouseService, ILogger<WarehouseController> logger)
+    public WarehouseController(IMediator mediator, ILogger<WarehouseController> logger)
     {
-        _warehouseService = warehouseService;
-        _logger           = logger;
+        _mediator = mediator;
+        _logger   = logger;
     }
 
     [HttpGet("volumes")]
@@ -39,7 +40,7 @@ public sealed class WarehouseController : ControllerBase
         _logger.LogInformation("Volumes requested by {UserId} from={From} to={To}",
             User.Identity?.Name, from, to);
 
-        return Ok(await _warehouseService.GetVolumesAsync(from, to, ct));
+        return Ok(await _mediator.Send(new GetVolumesQuery(from, to), ct));
     }
 
     [HttpGet("top-products")]
@@ -51,6 +52,6 @@ public sealed class WarehouseController : ControllerBase
     {
         _logger.LogInformation("Top products requested by {UserId}", User.Identity?.Name);
 
-        return Ok(await _warehouseService.GetTopProductsAsync(ct));
+        return Ok(await _mediator.Send(new GetTopProductsQuery(), ct));
     }
 }

@@ -12,6 +12,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		AGENTS.md = AGENTS.md
 		ForeFrontWebApplication\appsettings.Development.json = ForeFrontWebApplication\appsettings.Development.json
 		.github\copilot-instructions.md = .github\copilot-instructions.md
+		.github\workflows\deploy.yml = .github\workflows\deploy.yml
 		docker\init.sql = docker\init.sql
 	EndProjectSection
 EndProject

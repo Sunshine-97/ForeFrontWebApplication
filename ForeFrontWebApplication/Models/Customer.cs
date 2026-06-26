@@ -1,8 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace ForeFrontWebApplication.Models.Customer
+namespace ForeFrontWebApplication.Models
 {
-    public class Customers
+    public class Customer
     {
         public required string CustomerId { get; set; }
 

@@ -403,3 +403,4 @@ secrets/
 
 # Docker env file
 ForeFrontWebApplication/docker-compose.env
+/ForeFrontWebApplication/CQRS-implementation.md

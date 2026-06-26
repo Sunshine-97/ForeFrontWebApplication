@@ -1,21 +1,21 @@
-﻿using System.Threading.RateLimiting;
+using System.Threading.RateLimiting;
 using System.Text;
+using FluentValidation;
 using ForeFrontWebApplication.Data;
-using ForeFrontWebApplication.Repositories.Customer;
-using ForeFrontWebApplication.Repositories.Order;
-using ForeFrontWebApplication.Repositories.Product;
-using ForeFrontWebApplication.Repositories.Warehouse;
 using ForeFrontWebApplication.Services;
 using ForeFrontWebApplication.Settings;
+using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using ForeFrontWebApplication.Repositories;
+using ForeFrontWebApplication.Shared.Behaviors;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ?? JWT settings
+// JWT settings
 // Supply Jwt:SigningKey via environment variable or secrets manager in production.
 // Never commit a real signing key to source control.
 var jwtSettings = builder.Configuration
@@ -27,7 +27,7 @@ var jwtSettings = builder.Configuration
 builder.Services.Configure<JwtSettings>(
     builder.Configuration.GetSection(JwtSettings.SectionName));
 
-// ?? Authentication
+// Authentication
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -53,22 +53,26 @@ builder.Services.AddDbContext<AppDbContext>(options =>
             ?? throw new InvalidOperationException(
                 "Connection string 'DefaultConnection' is missing.")));
 
-builder.Services.AddScoped<ICustomerRepository,  EfCustomerRepository>();
-builder.Services.AddScoped<IProductRepository,   EfProductRepository>();
-builder.Services.AddScoped<IOrderRepository,     EfOrderRepository>();
-builder.Services.AddScoped<IWarehouseRepository, EfWarehouseRepository>();
-builder.Services.AddScoped<IOrderService,        OrderService>();
-builder.Services.AddScoped<IWarehouseService,    WarehouseService>();
+builder.Services.AddScoped<ICustomerRepository,  CustomerRepository>();
+builder.Services.AddScoped<IProductRepository,   ProductRepository>();
+builder.Services.AddScoped<IOrderRepository,     OrderRepository>();
+builder.Services.AddScoped<IWarehouseRepository, WarehouseRepository>();
 builder.Services.AddSingleton<ITokenService, TokenService>();
 builder.Services.AddSingleton<IAuthService,  AuthService>();
 
-// ?? Authorization 
+// CQRS: MediatR handlers, FluentValidation validators and the validation pipeline
+builder.Services.AddMediatR(cfg =>
+    cfg.RegisterServicesFromAssemblyContaining<Program>());
+builder.Services.AddValidatorsFromAssemblyContaining<Program>(includeInternalTypes: true);
+builder.Services.AddScoped(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+
+// Authorization 
 builder.Services.AddAuthorizationBuilder()
     .AddPolicy("Customer", policy => policy.RequireRole("Customer"))
     .AddPolicy("Warehouse", policy => policy.RequireRole("Warehouse"))
     .AddPolicy("Admin", policy => policy.RequireRole("Admin"));
 
-// ?? Rate Limiting 
+// Rate Limiting 
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -90,7 +94,7 @@ builder.Services.AddRateLimiter(options =>
     });
 });
 
-// ?? MVC / API 
+// MVC / API 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
@@ -140,7 +144,18 @@ app.UseExceptionHandler(errorApp =>
         var feature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
         var logger  = context.RequestServices.GetRequiredService<ILogger<Program>>();
 
-        if (feature?.Error is KeyNotFoundException)
+        if (feature?.Error is ValidationException validationException)
+        {
+            logger.LogWarning(feature.Error, "Validation failed");
+            context.Response.StatusCode  = StatusCodes.Status400BadRequest;
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsJsonAsync(new
+            {
+                error  = "Validation failed.",
+                errors = validationException.Errors.Select(e => e.ErrorMessage)
+            });
+        }
+        else if (feature?.Error is KeyNotFoundException)
         {
             logger.LogWarning(feature.Error, "Resource not found");
             context.Response.StatusCode  = StatusCodes.Status404NotFound;
