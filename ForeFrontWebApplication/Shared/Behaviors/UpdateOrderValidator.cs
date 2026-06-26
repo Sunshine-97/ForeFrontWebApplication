@@ -5,7 +5,11 @@ using ForeFrontWebApplication.Repositories;
 
 namespace ForeFrontWebApplication.Shared.Behaviors;
 
+<<<<<<< HEAD
 public class UpdateOrderValidator : AbstractValidator<UpdateOrderStatusCommand>
+=======
+internal sealed class UpdateOrderValidator : AbstractValidator<UpdateOrderStatusCommand>
+>>>>>>> 7726cb5f43fa24672b425b11376930eed481072c
 {
     // Defines the permitted forward-only state machine transitions.
     // Delivered and Cancelled are terminal states — no further transitions allowed.

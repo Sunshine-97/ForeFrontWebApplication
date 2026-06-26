@@ -3,7 +3,11 @@ using ForeFrontWebApplication.Commands;
 
 namespace ForeFrontWebApplication.Shared.Behaviors;
 
+<<<<<<< HEAD
 public class CreateOrderValidator : AbstractValidator<CreateOrderCommand>
+=======
+internal sealed class CreateOrderValidator : AbstractValidator<CreateOrderCommand>
+>>>>>>> 7726cb5f43fa24672b425b11376930eed481072c
 {
     public CreateOrderValidator()
     {

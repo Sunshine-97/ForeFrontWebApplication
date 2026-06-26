@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ﻿using ForeFrontWebApplication.Commands;
 using FluentValidation;
 using ForeFrontWebApplication.DTOs.Order;
@@ -124,5 +125,31 @@ public class CreateOrderValidatorTests
         Assert.Contains(result.Errors, e =>
             e.PropertyName.Contains("Antal") &&
             e.ErrorMessage == "Antal måste vara mellan 1 och 10 000.");
+=======
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Xunit;
+
+namespace ForeFrontWebApplication.Tests.Validators
+{
+    public class CreateOrderValidatorTests
+    {
+        private readonly CreateOrderValidator _sut = new();
+
+        [Fact]
+        public void ShouldFailWhenNoLines()
+        {
+            var cmd = new CreateOrderCommand
+            {
+                KundId = "customer-1",
+                Produkter = []
+            };
+
+            var result = _sut.Validate(cmd);
+        }
+>>>>>>> 7726cb5f43fa24672b425b11376930eed481072c
     }
 }

@@ -10,7 +10,11 @@ namespace ForeFrontWebApplication.Shared.Behaviors
     /// pipeline by throwing a <see cref="ValidationException"/>, which is mapped to a
     /// 400 response in the global exception handler.
     /// </summary>
+<<<<<<< HEAD
     public class ValidationBehavior<TRequest, TResponse>
+=======
+    public sealed class ValidationBehavior<TRequest, TResponse>
+>>>>>>> 7726cb5f43fa24672b425b11376930eed481072c
         : IPipelineBehavior<TRequest, TResponse>
         where TRequest : notnull
     {
