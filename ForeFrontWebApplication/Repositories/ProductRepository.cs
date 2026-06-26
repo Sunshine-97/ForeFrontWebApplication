@@ -2,7 +2,13 @@ using ForeFrontWebApplication.Data;
 using Microsoft.EntityFrameworkCore;
 using ForeFrontWebApplication.Models.Product;
 
+<<<<<<<< HEAD:ForeFrontWebApplication/Repositories/ProductRepository.cs
 namespace ForeFrontWebApplication.Repositories
+========
+namespace ForeFrontWebApplication.Repositories.Product;
+
+public sealed class ProductRepository : IProductRepository
+>>>>>>>> renamed repos:ForeFrontWebApplication/Repositories/Product/ProductRepository.cs
 {
 
   public sealed class ProductRepository : IProductRepository
