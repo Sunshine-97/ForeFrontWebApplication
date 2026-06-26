@@ -8,7 +8,10 @@ namespace ForeFrontWebApplication.Repositories
 namespace ForeFrontWebApplication.Repositories.Product;
 
 public sealed class ProductRepository : IProductRepository
+<<<<<<<< HEAD:ForeFrontWebApplication/Repositories/ProductRepository.cs
 >>>>>>>> renamed repos:ForeFrontWebApplication/Repositories/Product/ProductRepository.cs
+========
+>>>>>>>> 62baaf8259629f29a2a0cf83b0e17191581157d8:ForeFrontWebApplication/Repositories/Product/ProductRepository.cs
 {
 
   public sealed class ProductRepository : IProductRepository
