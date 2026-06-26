@@ -4,11 +4,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ForeFrontWebApplication.Repositories.Customer;
 
-public sealed class EfCustomerRepository : ICustomerRepository
+public sealed class CustomerRepository : ICustomerRepository
 {
     private readonly AppDbContext _db;
 
-    public EfCustomerRepository(AppDbContext db)
+    public CustomerRepository(AppDbContext db)
     {
         _db = db;
     }

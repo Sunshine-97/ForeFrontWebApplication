@@ -4,11 +4,11 @@ using ForeFrontWebApplication.Models.Product;
 
 namespace ForeFrontWebApplication.Repositories.Product;
 
-public sealed class EfProductRepository : IProductRepository
+public sealed class ProductRepository : IProductRepository
 {
     private readonly AppDbContext _db;
 
-    public EfProductRepository(AppDbContext db)
+    public ProductRepository(AppDbContext db)
     {
         _db = db;
     }

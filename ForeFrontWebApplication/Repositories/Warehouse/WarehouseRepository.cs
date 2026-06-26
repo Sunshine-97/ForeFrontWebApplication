@@ -4,11 +4,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ForeFrontWebApplication.Repositories.Warehouse;
 
-public sealed class EfWarehouseRepository : IWarehouseRepository
+public sealed class WarehouseRepository : IWarehouseRepository
 {
     private readonly AppDbContext _db;
 
-    public EfWarehouseRepository(AppDbContext db)
+    public WarehouseRepository(AppDbContext db)
     {
         _db = db;
     }

@@ -53,10 +53,10 @@ builder.Services.AddDbContext<AppDbContext>(options =>
             ?? throw new InvalidOperationException(
                 "Connection string 'DefaultConnection' is missing.")));
 
-builder.Services.AddScoped<ICustomerRepository,  EfCustomerRepository>();
-builder.Services.AddScoped<IProductRepository,   EfProductRepository>();
-builder.Services.AddScoped<IOrderRepository,     EfOrderRepository>();
-builder.Services.AddScoped<IWarehouseRepository, EfWarehouseRepository>();
+builder.Services.AddScoped<ICustomerRepository,  CustomerRepository>();
+builder.Services.AddScoped<IProductRepository,   ProductRepository>();
+builder.Services.AddScoped<IOrderRepository,     OrderRepository>();
+builder.Services.AddScoped<IWarehouseRepository, WarehouseRepository>();
 builder.Services.AddScoped<IOrderService,        OrderService>();
 builder.Services.AddScoped<IWarehouseService,    WarehouseService>();
 builder.Services.AddSingleton<ITokenService, TokenService>();

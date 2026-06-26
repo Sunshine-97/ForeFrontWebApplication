@@ -8,11 +8,11 @@ namespace ForeFrontWebApplication.Repositories.Order;
 /// EF Core + PostgreSQL implementation of <see cref="IOrderRepository"/>.
 /// Registered as Scoped in Program.cs (lifetime matches AppDbContext).
 /// </summary>
-public sealed class EfOrderRepository : IOrderRepository
+public sealed class OrderRepository : IOrderRepository
 {
     private readonly AppDbContext _db;
 
-    public EfOrderRepository(AppDbContext db)
+    public OrderRepository(AppDbContext db)
     {
         _db = db;
     }
